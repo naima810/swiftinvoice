@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+
 import jsPDF from "jspdf";
 
 export default function NewInvoice() {
@@ -46,6 +48,21 @@ export default function NewInvoice() {
   doc.save("invoice.pdf");
 };
 
+const saveInvoice = async () => {
+  const { error } = await supabase.from("invoices").insert([
+    {
+      items,
+      subtotal,
+    },
+  ]);
+
+  if (error) {
+    alert("Error saving invoice");
+    console.error(error);
+  } else {
+    alert("Invoice saved");
+  }
+};
 
   return (
     <main className="p-10 max-w-4xl mx-auto">
@@ -100,6 +117,13 @@ export default function NewInvoice() {
 >
   Download PDF
 </button>
+<button
+  onClick={saveInvoice}
+  className="mt-4 ml-4 px-6 py-2 bg-green-600 text-white"
+>
+  Save Invoice
+</button>
+
 
     </main>
   );
