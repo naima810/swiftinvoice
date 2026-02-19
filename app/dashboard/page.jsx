@@ -1,133 +1,173 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-import { Bar, Pie } from "react-chartjs-2";
+'use client';
+import React, { useState,useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from "@/lib/supabase";
+import Sidebar from '@/components/Sidebar';
+import { FaHome, FaFileInvoice, FaChartPie, FaUserCircle, FaPlus, FaClock } from 'react-icons/fa';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-);
+// Mock data (replace with Supabase queries later)
+const metrics = {
+  totalHours: 120,
+  totalRevenue: 3500,
+  outstandingInvoices: 4,
+  paidInvoices: 10
+};
 
-// initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+const revenueData = [
+  { day: 'Mon', revenue: 200 },
+  { day: 'Tue', revenue: 300 },
+  { day: 'Wed', revenue: 250 },
+  { day: 'Thu', revenue: 400 },
+  { day: 'Fri', revenue: 500 },
+  { day: 'Sat', revenue: 350 },
+  { day: 'Sun', revenue: 450 },
+];
 
-export default function Dashboard() {
-  const [invoices, setInvoices] = useState([]);
+const invoiceStatusData = [
+  { name: 'Paid', value: 10 },
+  { name: 'Outstanding', value: 4 },
+  { name: 'Overdue', value: 2 },
+];
 
-  useEffect(() => {
-    const fetchInvoices = async () => {
-      const { data } = await supabase.from("invoices").select("*");
-      setInvoices(data || []);
-    };
-    fetchInvoices();
-  }, []);
+const recentInvoices = [
+  { project: 'Website Redesign', client: 'Acme Corp', hours: 15, amount: 1500, status: 'Paid' },
+  { project: 'SEO Optimization', client: 'Beta LLC', hours: 8, amount: 800, status: 'Outstanding' },
+  { project: 'Logo Design', client: 'Gamma Inc', hours: 5, amount: 500, status: 'Paid' },
+  { project: 'Landing Page', client: 'Delta Ltd', hours: 10, amount: 1000, status: 'Overdue' },
+];
 
-  // Prepare chart data
-  const monthlyRevenue = invoices.reduce((acc, inv) => {
-    const month = new Date(inv.created_at).getMonth();
-    acc[month] = (acc[month] || 0) + (inv.subtotal || 0);
-    return acc;
-  }, {});
+const COLORS = ['#10B981', '#F59E0B', '#EF4444']; // green, yellow, red
 
-  const revenueLabels = [...Array(12).keys()].map((m) => `Month ${m + 1}`);
-  const revenueData = revenueLabels.map((_, i) => monthlyRevenue[i] || 0);
+export default function Dashboard({ user }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const paidInvoices = invoices.filter((inv) => inv.status === "paid").length;
-  const unpaidInvoices = invoices.length - paidInvoices;
 
-  const barData = {
-    labels: revenueLabels,
-    datasets: [
-      {
-        label: "Revenue",
-        data: revenueData,
-        backgroundColor: "#3b82f6", // indigo
-        borderRadius: 6,
-      },
-    ],
-  };
-
-  const pieData = {
-    labels: ["Paid", "Unpaid"],
-    datasets: [
-      {
-        label: "Invoices Status",
-        data: [paidInvoices, unpaidInvoices],
-        backgroundColor: ["#10b981", "#ef4444"], // green & red
-      },
-    ],
-  };
 
   return (
-    <main className="bg-gray-100 min-h-screen p-10">
-      <h1 className="text-4xl font-bold mb-8 text-gray-800">Dashboard</h1>
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center hover:scale-105 transition-transform duration-200">
-          <span className="text-gray-500 mb-2">Total Invoices</span>
-          <span className="text-2xl font-bold text-indigo-600">{invoices.length}</span>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center hover:scale-105 transition-transform duration-200">
-          <span className="text-gray-500 mb-2">Paid</span>
-          <span className="text-2xl font-bold text-green-600">{paidInvoices}</span>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center hover:scale-105 transition-transform duration-200">
-          <span className="text-gray-500 mb-2">Unpaid</span>
-          <span className="text-2xl font-bold text-red-600">{unpaidInvoices}</span>
-        </div>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Topbar */}
+        <header className="bg-white shadow px-6 py-4 flex justify-between items-center">
+          <h1 className="text-xl font-semibold">Welcome, User</h1>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white font-semibold">
+              USER
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto p-6">
+          {/* Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-gray-500">Total Hours</p>
+              <p className="text-2xl font-bold">{metrics.totalHours}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-gray-500">Total Revenue</p>
+              <p className="text-2xl font-bold">${metrics.totalRevenue}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-gray-500">Outstanding Invoices</p>
+              <p className="text-2xl font-bold">{metrics.outstandingInvoices}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-gray-500">Paid Invoices</p>
+              <p className="text-2xl font-bold">{metrics.paidInvoices}</p>
+            </div>
+          </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-white rounded-lg shadow p-4">
+              <h2 className="font-semibold mb-2">Revenue Over Time</h2>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={revenueData}>
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <h2 className="font-semibold mb-2">Invoice Status</h2>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={invoiceStatusData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={60}
+                    label
+                  >
+                    {invoiceStatusData.map((entry, index) => (
+                      <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Legend verticalAlign="bottom" height={36} />
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex gap-4 mb-6">
+            <button className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700">
+              <FaPlus /> Create Invoice
+            </button>
+            <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+              <FaClock /> Start Timer
+            </button>
+          </div>
+
+          {/* Recent Invoices Table */}
+          <div className="bg-white rounded-lg shadow p-4">
+            <h2 className="font-semibold mb-4">Recent Invoices</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr className="text-left text-gray-600">
+                    <th className="px-4 py-2">Project</th>
+                    <th className="px-4 py-2">Client</th>
+                    <th className="px-4 py-2">Hours</th>
+                    <th className="px-4 py-2">Amount</th>
+                    <th className="px-4 py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {recentInvoices.map((inv, i) => (
+                    <tr key={i} className="hover:bg-gray-50">
+                      <td className="px-4 py-2">{inv.project}</td>
+                      <td className="px-4 py-2">{inv.client}</td>
+                      <td className="px-4 py-2">{inv.hours}</td>
+                      <td className="px-4 py-2">${inv.amount}</td>
+                      <td className={`px-4 py-2 font-semibold ${
+                        inv.status === 'Paid' ? 'text-green-600' :
+                        inv.status === 'Outstanding' ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
+                        {inv.status}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </main>
       </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-  <h2 className="text-lg font-semibold mb-4 text-gray-700">Revenue by Month</h2>
-  <div className="h-64 md:h-80">
-    <Bar data={barData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
-  </div>
-</div>
-
-<div className="bg-white rounded-xl shadow-lg p-6">
-  <h2 className="text-lg font-semibold mb-4 text-gray-700">Invoices Status</h2>
-  <div className="h-64 md:h-80">
-    <Pie data={pieData} options={{ responsive: true, maintainAspectRatio: false }} />
-  </div>
-</div>
-
-      </div>
-
-      {/* Actions */}
-      <div>
-        <button className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-700 transition">
-          Create New Invoice
-        </button>
-        <button className="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg shadow hover:bg-gray-300 transition ml-4">
-          Go to Invoices List
-        </button>
-      </div>
-    </main>
+    </div>
   );
 }
