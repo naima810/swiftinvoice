@@ -1,29 +1,26 @@
 // app/dashboard/layout.tsx
-'use client';
+import Sidebar from '@/components/Sidebar'; // your existing sidebar
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 
-import React from 'react';
-import Sidebar from '@/Components/Sidebar'; // your existing sidebar
-import { useUser } from '@/lib/UserContext';
-import { useRouter } from 'next/navigation';
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, logout } = useUser();
-  const router = useRouter();
+const supabase = await createClient();
 
-  // While loading session
-  if (loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+const {
+  data: { user },
+} = await supabase.auth.getUser();
 
-  // If user is not logged in, redirect
-  if (!user) {
-    router.push('/auth');
-    return null;
-  }
-
+if (!user) {
+  redirect("/auth");
+}
+    
   return (
     <div className="flex bg-gray-50">
       {/* Sidebar */}
-      <Sidebar user={user} logout={logout} />
-
+      <div className="sticky top-0 h-screen w-64 bg-white shadow-md">
+      <Sidebar />
+    </div>
       {/* Main content */}
       <main className="flex-1 p-6">
         {children}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,7 +14,7 @@ export default function AuthPage() {
   const handleAuth = async () => {
     setLoading(true);
     setError("");
-
+    const supabase = createClient();
     // Simple validation
     if (!email || !password || (!isLogin && !name)) {
       setError("Please fill all required fields.");
@@ -29,6 +29,7 @@ export default function AuthPage() {
           email,
           password,
         });
+        
         if (error) throw error;
         window.location.href = "/dashboard";
         console.log("Logged in:", data.user);
@@ -37,7 +38,7 @@ export default function AuthPage() {
         // SIGNUP
         const { data, error } = await supabase.auth.signUp(
           { email, password },
-          { emailRedirectTo: null } // disables confirmation email for dev/testing
+          {options: { emailRedirectTo: null }} // disables confirmation email for dev/testing
         );
         if (error) throw error;
 
@@ -49,7 +50,9 @@ export default function AuthPage() {
           role: "user",
           plan: "free",
         });
-
+        if(!data.user){
+ throw new Error("User not created")
+}
         if (insertError) throw insertError;
         window.location.href = "/dashboard";
         console.log("Signup success and user added to users table:", data.user);

@@ -1,7 +1,6 @@
 'use client';
 import React, { useState,useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from "@/lib/supabase";
 import Sidebar from '@/components/Sidebar';
 import { FaHome, FaFileInvoice, FaChartPie, FaUserCircle, FaPlus, FaClock } from 'react-icons/fa';
 import {
@@ -48,7 +47,7 @@ export default function Dashboard({ user }) {
 
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex bg-gray-50">
       {/* Sidebar */}
 
       {/* Main Content */}

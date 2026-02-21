@@ -5,10 +5,10 @@ import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { FaHome, FaFileInvoice, FaChartPie, FaUserCircle, FaAngleDown, FaBars } from 'react-icons/fa';
 
-interface SidebarProps {
-  user: { email: string };
-  logout: () => void;
-}
+// interface SidebarProps {
+//   user: { email: string };
+//   logout: () => void;
+// }
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: <FaHome /> },
@@ -24,8 +24,7 @@ const navItems = [
   { name: 'Analytics', href: '/dashboard/analytics', icon: <FaChartPie /> },
   { name: 'Account', href: '/dashboard/account', icon: <FaUserCircle /> },
 ];
-
-export default function Sidebar({ user, logout }: SidebarProps) {
+export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -107,10 +106,11 @@ export default function Sidebar({ user, logout }: SidebarProps) {
         {/* User info */}
         <div className="mt-auto pt-4 border-t border-gray-200 flex flex-col items-center gap-3">
           <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white font-semibold">
-            {user.email[0].toUpperCase()}
+            {/* {user.email[0].toUpperCase()} */}
+            naima@gmail.com
           </div>
-          <span className="text-gray-600 text-sm">{user.email}</span>
-          <button onClick={logout} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition">
+          <span className="text-gray-600 text-sm">naima@gmail.com</span>
+          <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition">
             Logout
           </button>
         </div>

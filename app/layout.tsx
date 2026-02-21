@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import {UserProvider} from "@/lib/UserContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,9 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="antialiased bg-gray-100">
-        <UserProvider>
           <main>{children}</main>
-        </UserProvider>
       </body>
     </html>
   );
