@@ -37,8 +37,8 @@ export default function AuthPage() {
       } else {
         // SIGNUP
         const { data, error } = await supabase.auth.signUp(
-          { email, password },
-          {options: { emailRedirectTo: null }} // disables confirmation email for dev/testing
+          { email, password,},
+          {options: { data: { full_name: name }, emailRedirectTo: null }} // disables confirmation email for dev/testing
         );
         if (error) throw error;
 
