@@ -17,10 +17,8 @@ if (!user) {
     
   return (
     <div className="flex bg-gray-50">
-      {/* Sidebar */}
-      <div className="sticky top-0 h-screen w-64 bg-white shadow-md">
+      
       <Sidebar />
-    </div>
       {/* Main content */}
       <main className="flex-1 p-6">
         {children}

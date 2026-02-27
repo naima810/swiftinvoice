@@ -10,37 +10,31 @@ export default function Navbar({ user, logout }) {
   const [openSub, setOpenSub] = useState(null); // For mobile accordion
 
   const navItems = [
-    { name: 'Dashboard', href: '/dashboard', icon: <FaHome /> },
     {
-      name: 'Invoices',
-      icon: <FaFileInvoice />,
-      subLinks: [
-        { name: 'All Invoices', href: '/invoices' },
-        { name: 'Create Invoice', href: '/invoices/new' },
-        { name: 'Sent Reminders', href: '/invoices/reminders' },
-      ],
+      name: 'Features', icon: <FaFileInvoice />,
     },
-    { name: 'Analytics', href: '/analytics', icon: <FaChartPie /> },
-    { name: 'Account', href: '/account', icon: <FaUserCircle /> },
+    { name: 'Pricing', href: '/analytics', icon: <FaChartPie /> },
+
+    { name: 'How it works', href: '/dashboard', icon: <FaHome /> },
   ];
 
   const hoverBg = "hover:bg-teal-50";
 
-  // DRY User Info
-  const UserInfo = ({ user, logout }) => (
-    <div className="flex items-center gap-3">
-      <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white font-semibold">
-        {user.email[0].toUpperCase()}
-      </div>
-      <span className="text-gray-600 text-sm">{user.email}</span>
-      <button
-        onClick={logout}
-        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition"
-      >
-        Logout
-      </button>
-    </div>
-  );
+  // // DRY User Info
+  // const UserInfo = ({ user, logout }) => (
+  //   <div className="flex items-center gap-3">
+  //     <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white font-semibold">
+  //       {user.email[0].toUpperCase()}
+  //     </div>
+  //     <span className="text-gray-600 text-sm">{user.email}</span>
+  //     <button
+  //       onClick={logout}
+  //       className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition"
+  //     >
+  //       Logout
+  //     </button>
+  //   </div>
+  // );
 
   return (
     <nav className="bg-white shadow sticky top-0 z-50">
@@ -48,7 +42,7 @@ export default function Navbar({ user, logout }) {
         {/* Logo */}
         <div
           className="text-2xl font-bold text-teal-700 cursor-pointer hover:text-teal-600 transition"
-          onClick={() => router.push('/dashboard')}
+          onClick={() => router.push('/')}
         >
           SwiftInvoice
         </div>
@@ -91,7 +85,9 @@ export default function Navbar({ user, logout }) {
 
           {/* User Info */}
           <div className="ml-4 border-l border-gray-200 pl-4">
-            <UserInfo user={user} logout={logout} />
+            <button onClick={logout} className="bg-teal-500 text-bolder text-white hover:bg-teal-600 transition px-3 py-1 rounded text-sm">
+              Login/Signup
+            </button>
           </div>
         </div>
 
@@ -142,10 +138,13 @@ export default function Navbar({ user, logout }) {
               )}
             </div>
           ))}
-
-          <div className="flex items-center gap-3 border-t border-gray-200 pt-4">
-            <UserInfo user={user} logout={logout} />
+          {/* User Info */}
+          <div className="mt-4 border-t border-gray-200 pt-4">
+            <button onClick={logout} className="w-full bg-teal-500 text-bolder text-white hover:bg-teal-600 transition px-3 py-2 rounded text-sm">
+              Login/Signup
+            </button>
           </div>
+
         </div>
       )}
     </nav>

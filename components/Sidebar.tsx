@@ -16,8 +16,13 @@ const navItems = [
       { name: 'Sent Reminders', href: '/dashboard/invoices/reminders' },
     ],
   },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: <FaChartPie /> },
-  { name: 'Account', href: '/dashboard/account', icon: <FaUserCircle /> },
+  { name: 'Account',
+    icon: <FaUserCircle />,
+    subLinks: [
+      { name: 'Company Setting', href: '/dashboard/account/company' },
+      { name: 'Account Settings', href: '/dashboard/account/settings' },
+    ]
+   },
 ]
 
 export default function Sidebar() {
@@ -46,56 +51,75 @@ useEffect(() => {
     }
   }
 
-  const renderNavItem = (item: typeof navItems[0]) => {
-    const active =
-      pathname === item.href ||
-      (item.subLinks && item.subLinks.some(sl => sl.href === pathname))
+ const renderNavItem = (item: typeof navItems[0]) => {
 
-    if (item.subLinks) {
-      return (
-        <div key={item.name} className="relative">
-          <button
-            onClick={() => setInvoicesOpen(!invoicesOpen)}
-            className={`flex items-center gap-2 w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              active
-                ? 'bg-teal-100 shadow-sm border-l-4 border-teal-600 text-teal-700'
-                : 'text-gray-700 hover:bg-teal-50'
-            }`}
-          >
-            {item.icon}
-            <span>{item.name}</span>
-            <FaAngleDown className="text-sm" />
-          </button>
+  const active =
+    pathname === item.href ||
+    (item.subLinks &&
+      item.subLinks.some(sl => pathname === sl.href))
 
-          {invoicesOpen &&
-            item.subLinks.map(sl => (
-              <button
-                key={sl.name}
-                onClick={() => router.push(sl.href)}
-                className="px-4 py-2 text-gray-700 hover:bg-teal-50 rounded transition text-left ml-4 mt-1"
-              >
-                {sl.name}
-              </button>
-            ))}
-        </div>
-      )
-    } else {
-      return (
-        <button
-          key={item.name}
-          onClick={() => router.push(item.href)}
-          className={`flex items-center gap-2 w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+  if (item.subLinks) {
+    return (
+
+      <div key={item.name}>
+
+        {/* Parent */}
+        <div
+          className={`flex items-center gap-2 px-4 py-2 font-medium ${
             active
-              ? 'bg-teal-100 shadow-sm border-l-4 border-teal-600 text-teal-700'
-              : 'text-gray-700 hover:bg-teal-50'
+              ? 'text-teal-700'
+              : 'text-gray-700'
           }`}
         >
           {item.icon}
           <span>{item.name}</span>
-        </button>
-      )
-    }
+        </div>
+
+        {/* Sublinks ALWAYS OPEN */}
+        <div className="ml-6 space-y-1">
+
+          {item.subLinks.map(sl => {
+
+            const subActive = pathname === sl.href
+
+            return (
+              <button
+                key={sl.name}
+                onClick={() => router.push(sl.href)}
+                className={`block w-full text-left px-3 py-2 rounded transition ${
+                  subActive
+                    ? 'bg-teal-100 text-teal-700'
+                    : 'hover:bg-teal-50 text-gray-700'
+                }`}
+              >
+                {sl.name}
+              </button>
+            )
+          })}
+
+        </div>
+
+      </div>
+    )
   }
+
+  return (
+
+    <button
+      key={item.name}
+      onClick={() => router.push(item.href!)}
+      className={`flex items-center gap-2 w-full px-4 py-2 rounded-lg font-medium ${
+        active
+          ? 'bg-teal-100 border-l-4 border-teal-600 text-teal-700'
+          : 'hover:bg-teal-50 text-gray-700'
+      }`}
+    >
+      {item.icon}
+      <span>{item.name}</span>
+    </button>
+
+  )
+}
 
   return (
     <>
@@ -103,7 +127,7 @@ useEffect(() => {
       <div className="md:hidden flex items-center justify-between bg-white p-4 shadow">
         <div
           className="text-2xl font-bold text-teal-700 cursor-pointer"
-          onClick={() => router.push('/dashboard')}
+          onClick={() => router.push('/')}
         >
           SwiftInvoice
         </div>
@@ -116,11 +140,11 @@ useEffect(() => {
       </div>
 
       {/* Sidebar */}
-      <aside
-        className={`h-screen bg-white md:flex md:flex-col md:w-64 shadow-md p-4 absolute md:relative z-50 ${
-          mobileOpen ? 'block' : 'hidden'
-        } md:block`}
-      >
+<aside
+  className={`sticky top-0 left-0 h-screen bg-white md:flex md:flex-col md:w-64 shadow-md p-4 z-50 ${
+    mobileOpen ? 'block' : 'hidden'
+  } md:block`}
+>
         {/* Brand */}
         <div
           className="hidden md:block text-2xl font-bold text-teal-700 cursor-pointer mb-6"

@@ -1,217 +1,218 @@
-'use client';
+// 'use client'
 
-import { useState, ChangeEvent } from "react";
-import { createClient } from "@/lib/supabase/client";
-import jsPDF from "jspdf";
+// import React, { useState } from 'react'
 
-interface LineItem {
-  name: string;
-  description: string;
-  quantity: number;
-  price: number;
-  tax: number;
-}
+// interface Item {
+//   description: string
+//   qty: number
+//   price: number
+// }
 
-export default function InvoiceForm() {
-  const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
-  const [dueDate, setDueDate] = useState("");
-  const [currency, setCurrency] = useState("USD");
+// export default function CreateInvoicePage() {
+//   const [items, setItems] = useState<Item[]>([{ description: '', qty: 1, price: 0 }])
+//   const [clientName, setClientName] = useState('')
+//   const [clientEmail, setClientEmail] = useState('')
+//   const [invoiceNumber, setInvoiceNumber] = useState('INV-001')
+//   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+//   const [dueDate, setDueDate] = useState('')
+//   const [tax, setTax] = useState(0)
+//   const [notes, setNotes] = useState('')
 
-  const [companyName, setCompanyName] = useState("");
-  const [companyAddress, setCompanyAddress] = useState("");
-  const [companyEmail, setCompanyEmail] = useState("");
-  const [companyPhone, setCompanyPhone] = useState("");
-  const [companyLogo, setCompanyLogo] = useState<File | null>(null);
+//   const addItem = () => setItems([...items, { description: '', qty: 1, price: 0 }])
+//   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index))
+//   const updateItem = (index: number, key: keyof Item, value: any) => {
+//     const newItems = [...items]
+//     newItems[index][key] = key === 'qty' || key === 'price' ? Number(value) : value
+//     setItems(newItems)
+//   }
 
-  const [clientName, setClientName] = useState("");
-  const [clientAddress, setClientAddress] = useState("");
-  const [clientEmail, setClientEmail] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
+//   const subtotal = items.reduce((acc, item) => acc + item.qty * item.price, 0)
+//   const total = subtotal + (subtotal * tax) / 100
 
-  const [notes, setNotes] = useState("");
-  const [terms, setTerms] = useState("");
+//   const handleSave = () => {
+//     alert('Invoice saved! Total: $' + total)
+//   }
 
-  const [lineItems, setLineItems] = useState<LineItem[]>([
-    { name: "", description: "", quantity: 1, price: 0, tax: 0 },
-  ]);
+//   return (
+//     <div className="p-6 max-w-7xl mx-auto">
+//       {/* Header Actions */}
+//       <div className="flex flex-wrap justify-end gap-3 mb-6">
+//         <button className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition">Preview</button>
+//         <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Download PDF</button>
+//         <button className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 transition">Send Email</button>
+//       </div>
 
-  const [sendEmail, setSendEmail] = useState(false);
+//       {/* Page Title */}
+//       <h1 className="text-3xl font-bold text-teal-700 mb-6">Create Invoice</h1>
 
-  // Handle line item changes
-  const handleLineChange = (index: number, field: keyof LineItem, value: any) => {
-    const items = [...lineItems];
-    items[index][field] = field === "quantity" || field === "price" || field === "tax" ? Number(value) : value;
-    setLineItems(items);
-  };
+//       {/* Company & Client Details */}
+//       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+//         <div className="bg-white shadow rounded-lg p-4 flex flex-col gap-3">
+//           <h2 className="font-semibold text-lg mb-2">Your Company</h2>
+//           <input className="border p-2 rounded" placeholder="Business Name" />
+//           <input className="border p-2 rounded" placeholder="Email" />
+//           <input className="border p-2 rounded" placeholder="Address" />
+//           <input className="border p-2 rounded" placeholder="Phone" />
+//           <input type="file" className="mt-2" />
+//         </div>
+//         <div className="bg-white shadow rounded-lg p-4 flex flex-col gap-3">
+//           <h2 className="font-semibold text-lg mb-2">Client Details</h2>
+//           <input
+//             className="border p-2 rounded"
+//             type="text"
+//             placeholder="Client Name"
+//             value={clientName}
+//             onChange={e => setClientName(e.target.value)}
+//           />
+//           <input
+//             className="border p-2 rounded"
+//             type="email"
+//             placeholder="Client Email"
+//             value={clientEmail}
+//             onChange={e => setClientEmail(e.target.value)}
+//           />
+//         </div>
+//       </div>
 
-  const addLineItem = () => setLineItems([...lineItems, { name: "", description: "", quantity: 1, price: 0, tax: 0 }]);
-  const removeLineItem = (index: number) => setLineItems(lineItems.filter((_, i) => i !== index));
+//       {/* Invoice Meta */}
+//       <div className="bg-white shadow rounded-lg p-4 flex flex-wrap gap-4 mb-6">
+//         <div className="flex flex-col w-48">
+//           <label className="text-gray-600 text-sm">Invoice Number</label>
+//           <input
+//             className="border p-2 rounded"
+//             type="text"
+//             value={invoiceNumber}
+//             onChange={e => setInvoiceNumber(e.target.value)}
+//           />
+//         </div>
+//         <div className="flex flex-col w-48">
+//           <label className="text-gray-600 text-sm">Date</label>
+//           <input
+//             className="border p-2 rounded"
+//             type="date"
+//             value={date}
+//             onChange={e => setDate(e.target.value)}
+//           />
+//         </div>
+//         <div className="flex flex-col w-48">
+//           <label className="text-gray-600 text-sm">Due Date</label>
+//           <input
+//             className="border p-2 rounded"
+//             type="date"
+//             value={dueDate}
+//             onChange={e => setDueDate(e.target.value)}
+//           />
+//         </div>
+//       </div>
 
-  const calculateTotals = () => {
-    let subtotal = 0;
-    let taxTotal = 0;
-    lineItems.forEach((item) => {
-      const itemTotal = item.quantity * item.price;
-      subtotal += itemTotal;
-      taxTotal += (item.tax / 100) * itemTotal;
-    });
-    return { subtotal, taxTotal, total: subtotal + taxTotal };
-  };
+//       {/* Items Table */}
+//       <div className="bg-white shadow rounded-lg p-4 mb-6">
+//         <div className="flex justify-between items-center mb-3">
+//           <h2 className="text-lg font-semibold">Line Items</h2>
+//           <button
+//             onClick={addItem}
+//             className="bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700 transition"
+//           >
+//             + Add Item
+//           </button>
+//         </div>
+//         <div className="overflow-x-auto">
+//           <table className="w-full table-auto border-collapse">
+//             <thead>
+//               <tr className="bg-gray-100">
+//                 <th className="border px-2 py-1">Description</th>
+//                 <th className="border px-2 py-1">Qty</th>
+//                 <th className="border px-2 py-1">Price</th>
+//                 <th className="border px-2 py-1">Total</th>
+//                 <th className="border px-2 py-1">Remove</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {items.map((item, i) => (
+//                 <tr key={i} className="hover:bg-gray-50">
+//                   <td className="border px-2 py-1">
+//                     <input
+//                       type="text"
+//                       className="w-full border rounded p-1"
+//                       placeholder="Item description"
+//                       value={item.description}
+//                       onChange={e => updateItem(i, 'description', e.target.value)}
+//                     />
+//                   </td>
+//                   <td className="border px-2 py-1">
+//                     <input
+//                       type="number"
+//                       min={1}
+//                       className="w-full border rounded p-1"
+//                       value={item.qty}
+//                       onChange={e => updateItem(i, 'qty', e.target.value)}
+//                     />
+//                   </td>
+//                   <td className="border px-2 py-1">
+//                     <input
+//                       type="number"
+//                       min={0}
+//                       className="w-full border rounded p-1"
+//                       value={item.price}
+//                       onChange={e => updateItem(i, 'price', e.target.value)}
+//                     />
+//                   </td>
+//                   <td className="border px-2 py-1">${item.qty * item.price}</td>
+//                   <td className="border px-2 py-1 text-center">
+//                     <button className="text-red-600 font-bold" onClick={() => removeItem(i)}>
+//                       X
+//                     </button>
+//                   </td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         </div>
+//       </div>
 
-  const handleLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) setCompanyLogo(e.target.files[0]);
-  };
+//       {/* Summary + Notes */}
+//       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+//         <div className="bg-white shadow rounded-lg p-4 max-w-sm">
+//           <label className="text-gray-600 text-sm">Tax %</label>
+//           <input
+//             type="number"
+//             min={0}
+//             className="border p-2 rounded mb-2 w-full"
+//             value={tax}
+//             onChange={e => setTax(Number(e.target.value))}
+//           />
+//           <div className="flex justify-between font-bold mb-1">
+//             <span>Subtotal:</span>
+//             <span>${subtotal}</span>
+//           </div>
+//           <div className="flex justify-between font-bold">
+//             <span>Total:</span>
+//             <span>${total}</span>
+//           </div>
+//         </div>
+//         <div className="bg-white shadow rounded-lg p-4">
+//           <label className="text-gray-600 text-sm">Notes / Terms</label>
+//           <textarea
+//             className="w-full border rounded p-2 h-32 mt-2"
+//             placeholder="Optional notes..."
+//             value={notes}
+//             onChange={e => setNotes(e.target.value)}
+//           />
+//         </div>
+//       </div>
 
-  const handleDownload = () => {
-    const { subtotal, taxTotal, total } = calculateTotals();
-    const doc = new jsPDF();
-
-    // Company logo
-    if (companyLogo) {
-      const reader = new FileReader();
-      reader.onload = function () {
-        const imgData = reader.result as string;
-        doc.addImage(imgData, "PNG", 10, 10, 40, 20);
-        doc.text(`${companyName}`, 55, 15);
-        doc.text(`${companyAddress}`, 55, 22);
-        doc.text(`Email: ${companyEmail}`, 55, 29);
-        doc.text(`Phone: ${companyPhone}`, 55, 36);
-        drawInvoiceContent(doc);
-      };
-      reader.readAsDataURL(companyLogo);
-    } else {
-      doc.text(`${companyName}`, 10, 10);
-      doc.text(`${companyAddress}`, 10, 17);
-      doc.text(`Email: ${companyEmail}`, 10, 24);
-      doc.text(`Phone: ${companyPhone}`, 10, 31);
-      drawInvoiceContent(doc);
-    }
-
-    function drawInvoiceContent(doc: jsPDF) {
-      doc.text(`Invoice #${invoiceNumber}`, 10, 50);
-      doc.text(`Invoice Date: ${invoiceDate}`, 10, 57);
-      doc.text(`Due Date: ${dueDate}`, 10, 64);
-      doc.text(`Bill To: ${clientName}`, 10, 71);
-      doc.text(`${clientAddress}`, 10, 78);
-      doc.text(`Email: ${clientEmail}`, 10, 85);
-      doc.text(`Phone: ${clientPhone}`, 10, 92);
-
-      let y = 100;
-      lineItems.forEach((item, i) => {
-        doc.text(
-          `${i + 1}. ${item.name} - ${item.description} | Qty: ${item.quantity} | Price: ${currency} ${item.price} | Tax: ${item.tax}%`,
-          10,
-          y
-        );
-        y += 7;
-      });
-
-      doc.text(`Subtotal: ${currency} ${subtotal.toFixed(2)}`, 10, y + 7);
-      doc.text(`Tax: ${currency} ${taxTotal.toFixed(2)}`, 10, y + 14);
-      doc.text(`Total: ${currency} ${total.toFixed(2)}`, 10, y + 21);
-
-      doc.save(`invoice-${invoiceNumber}.pdf`);
-    }
-  };
-
-  const handleSendInvoice = async () => {
-    if (!clientEmail) {
-      alert("Enter client email to send invoice.");
-      return;
-    }
-
-    const { subtotal, taxTotal, total } = calculateTotals();
-    const supabase = createClient();
-    const { error } = await supabase.functions.invoke("send-invoice", {
-      body: JSON.stringify({
-        to: clientEmail,
-        invoice: {
-          invoiceNumber,
-          invoiceDate,
-          dueDate,
-          companyName,
-          billingFrom: companyAddress,
-          clientName,
-          clientAddress,
-          lineItems,
-          subtotal,
-          taxTotal,
-          total,
-        },
-      }),
-    });
-
-    if (error) alert("Failed to send email: " + error.message);
-    else alert("Invoice sent successfully!");
-  };
-
-  const handleSubmit = () => {
-    handleDownload();
-    if (sendEmail) handleSendInvoice();
-  };
-
-  return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">Create Invoice</h1>
-
-      {/* Company Info & Logo */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleLogoUpload}
-          className="border p-1 rounded col-span-1"
-        />
-        <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Company Name" className="border p-2 rounded col-span-1"/>
-        <input value={companyEmail} onChange={(e) => setCompanyEmail(e.target.value)} placeholder="Company Email" className="border p-2 rounded col-span-1"/>
-        <input value={companyPhone} onChange={(e) => setCompanyPhone(e.target.value)} placeholder="Company Phone" className="border p-2 rounded col-span-1"/>
-      </div>
-      <input value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)} placeholder="Company Address" className="border p-2 rounded w-full"/>
-
-      {/* Client Info */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Client Name" className="border p-2 rounded"/>
-        <input value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder="Client Email" className="border p-2 rounded"/>
-        <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="Client Phone" className="border p-2 rounded"/>
-        <input value={clientAddress} onChange={(e) => setClientAddress(e.target.value)} placeholder="Client Address" className="border p-2 rounded"/>
-      </div>
-
-      {/* Invoice Details */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="Invoice #" className="border p-2 rounded"/>
-        <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} className="border p-2 rounded"/>
-        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="border p-2 rounded"/>
-        <input value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="Currency" className="border p-2 rounded"/>
-      </div>
-
-      {/* Line Items Table */}
-      <div>
-        <h2 className="font-semibold mb-2">Line Items</h2>
-        {lineItems.map((item, i) => (
-          <div key={i} className="grid grid-cols-6 gap-2 mb-2 items-center">
-            <input placeholder="Item Name" value={item.name} onChange={(e) => handleLineChange(i, "name", e.target.value)} className="border p-2 rounded"/>
-            <input placeholder="Description" value={item.description} onChange={(e) => handleLineChange(i, "description", e.target.value)} className="border p-2 rounded"/>
-            <input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => handleLineChange(i, "quantity", e.target.value)} className="border p-2 rounded"/>
-            <input type="number" placeholder="Price" value={item.price} onChange={(e) => handleLineChange(i, "price", e.target.value)} className="border p-2 rounded"/>
-            <input type="number" placeholder="Tax %" value={item.tax} onChange={(e) => handleLineChange(i, "tax", e.target.value)} className="border p-2 rounded"/>
-            <button onClick={() => removeLineItem(i)} className="bg-red-500 text-white px-2 py-1 rounded">Remove</button>
-          </div>
-        ))}
-        <button onClick={addLineItem} className="bg-teal-600 text-white px-4 py-2 rounded mt-2">Add Item</button>
-      </div>
-
-      {/* Notes & Terms */}
-      <textarea placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} className="border p-2 rounded w-full"/>
-      <textarea placeholder="Terms & Conditions" value={terms} onChange={(e) => setTerms(e.target.value)} className="border p-2 rounded w-full"/>
-
-      {/* Email Option */}
-      <div className="flex items-center gap-2">
-        <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} />
-        <span>Send invoice via email?</span>
-      </div>
-
-      <button onClick={handleSubmit} className="bg-teal-600 text-white px-6 py-2 rounded font-medium">Generate Invoice</button>
-    </div>
-  );
-}
+//       {/* Action Buttons */}
+//       <div className="flex gap-3">
+//         <button
+//           onClick={handleSave}
+//           className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 transition"
+//         >
+//           Save / Generate Invoice
+//         </button>
+//         <button className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition">
+//           Send Email
+//         </button>
+//       </div>
+//     </div>
+//   )
+// }
