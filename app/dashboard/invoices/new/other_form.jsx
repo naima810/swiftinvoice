@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-const supabase = createClient();
+
 const initialLineItems = [{ id: 1, item: "", description: "", qty: 1, unitPrice: 0 }];
 
 export default function CreateInvoice() {
@@ -31,75 +30,6 @@ export default function CreateInvoice() {
 
   const removeLineItem = (id: any) => setLineItems((items) => items.filter((li) => li.id !== id));
 
-  const handleSaveInvoice = async () => {
-  const user = (await supabase.auth.getUser()).data.user;
-  if (!user) return alert("Not logged in");
-
-  // 1. Create or insert client
-  const { data: client, error: clientError } = await supabase
-    .from("clients")
-    .insert({
-      user_id: user.id,
-      name: clientInfo.name,
-      email: clientInfo.email,
-      phone: clientInfo.phone,
-      address: clientInfo.address,
-    })
-    .select()
-    .single();
-
-  if (clientError) {
-    console.error(clientError);
-    return;
-  }
-
-  // 2. Create invoice
-  const { data: invoice, error: invoiceError } = await supabase
-    .from("invoices")
-    .insert({
-      user_id: user.id,
-      client_id: client.id,
-
-      currency,
-      payment_terms: paymentTerms,
-
-      subtotal,
-      discount: discountAmt,
-      tax: taxAmt,
-      total,
-
-      notes,
-      terms,
-    })
-    .select()
-    .single();
-
-  if (invoiceError) {
-    console.error(invoiceError);
-    return;
-  }
-
-  // 3. Insert line items
-  const itemsPayload = lineItems.map((li) => ({
-    invoice_id: invoice.id,
-    item: li.item,
-    description: li.description,
-    qty: li.qty,
-    unit_price: li.unitPrice,
-  }));
-
-  const { error: itemsError } = await supabase
-    .from("invoice_items")
-    .insert(itemsPayload);
-
-  if (itemsError) {
-    console.error(itemsError);
-    return;
-  }
-
-  alert("Invoice saved successfully 🚀");
-};
-
   const today = new Date().toISOString().slice(0, 10);
   const due = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
 
@@ -114,7 +44,7 @@ return (
           <button className="px-4 py-2 rounded-xl border border-[#d4cfe0] bg-teal-600 text-white text-sm font-semibold">
             Preview
           </button>
-          <button onClick={handleSaveInvoice} className="px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-semibold">
+          <button className="px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-semibold">
             Save Draft
           </button>
         </div>
@@ -137,7 +67,7 @@ return (
                 <Input placeholder="+1 555 000 0000" value={clientInfo.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientInfo({ ...clientInfo, phone: e.target.value })} />
               </Field>
               <Field label="ADDRESS (optional)">
-                <textarea rows={3} className="border rounded-xl p-2" placeholder="123 Main St, City, Country" value={clientInfo.address} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientInfo({ ...clientInfo, address: e.target.value })} />
+                <Input placeholder="123 Main St, City, Country" value={clientInfo.address} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientInfo({ ...clientInfo, address: e.target.value })} />
               </Field>
              
             </Section>
@@ -152,20 +82,20 @@ return (
                   </div>
                 </Field>
                 <Field label="ISSUE DATE">
-                  <input type="date" defaultValue={today} className="w-full border border-[#e2dded] rounded-xl p-2 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
+                  <input type="date" defaultValue={today} className="w-full border border-[#e2dded] rounded-xl px-3 py-2.5 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
                 </Field>
                 <Field label="DUE DATE">
-                  <input type="date" defaultValue={due} className="w-full border border-[#e2dded] rounded-xl p-2 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
+                  <input type="date" defaultValue={due} className="w-full border border-[#e2dded] rounded-xl px-3 py-2.5 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
                 </Field>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="CURRENCY">
-                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full border border-[#e2dded] rounded-xl p-2 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all">
+                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full border border-[#e2dded] rounded-xl px-3 py-2.5 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all">
                     <option>USD</option><option>EUR</option><option>GBP</option><option>PKR</option>
                   </select>
                 </Field>
                 <Field label="PAYMENT TERMS">
-                  <select value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="w-full border border-[#e2dded] rounded-xl p-2 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all">
+                  <select value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="w-full border border-[#e2dded] rounded-xl px-3 py-2.5 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all">
                     <option>Net 30</option><option>Net 15</option><option>Net 60</option><option>Due on Receipt</option>
                   </select>
                 </Field>
@@ -187,7 +117,7 @@ return (
               </colgroup>
 
               <thead>
-                <tr className="text-center">
+                <tr className="text-left">
                   {["ITEM", "DESCRIPTION", "QTY", "PRICE", "TOTAL", ""].map((h) => (
                     <th key={h} className="text-xs text-[#9b8ea0] pb-3 pr-3">{h}</th>
                   ))}
@@ -196,7 +126,7 @@ return (
 
               <tbody>
                 {lineItems.map((li) => (
-                  <tr className="m-4" key={li.id}>
+                  <tr key={li.id}>
                     <td className="pr-2 pb-2">
                       <input className="w-full border rounded-lg px-2 py-2 text-sm" />
                     </td>
@@ -213,7 +143,7 @@ return (
                       {fmt(li.qty * li.unitPrice)}
                     </td>
                     <td className="pb-2">
-                      <button className="w-full p-2 bg-red-100 text-red-500 rounded-lg" onClick={() => removeLineItem(li.id)}>×</button>
+                      <button className="w-full h-8 bg-red-100 text-red-500 rounded-lg">×</button>
                     </td>
                   </tr>
                 ))}
@@ -221,24 +151,24 @@ return (
             </table>
           </div>
 
-          <button onClick={addLineItem} className="mt-2 mb-4 w-full border-2 border-dashed border-[#d4cfe0] rounded-xl py-3 text-sm font-semibold text-[#9b8ea0] hover:border-[#0d9e8a] hover:text-[#0d9e8a] hover:bg-[#f0faf8] transition-all">
-                + Add Line Item
-              </button>
+          <button className="mt-3 w-full border-2 border-dashed rounded-xl py-3 text-sm">
+            + Add Line Item
+          </button>
         </Section>
 
         {/* ROW 3 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Section icon="📝" title="Additional Notes" accent="#7c5cbf">
+
            <div className="grid grid-cols-2 gap-4">
-                <Field label="Notes & Conditions">
+                <Field label="NOTES">
                   <textarea rows={4} placeholder="Thank you for your business..." value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full border border-[#e2dded] rounded-xl px-3 py-2.5 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all resize-none" />
                 </Field>
                 <Field label="TERMS & CONDITIONS">
                   <textarea rows={4} placeholder="Payment is due within the agreed period..." value={terms} onChange={(e) => setTerms(e.target.value)} className="w-full border border-[#e2dded] rounded-xl px-3 py-2.5 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all resize-none" />
                 </Field>
               </div>
-          </Section>
-          <div className="p-2 bg-white rounded-xl border border-[#e2dded] shadow-sm overflow-hidden">
+
+          <div className="p-2 bg-white rounded-2xl border border-[#e2dded] shadow-sm overflow-hidden">
               <div className="border-b border-[#f0edf6]">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">💰</span>
@@ -259,7 +189,7 @@ return (
                       <button onClick={() => setDiscount({ ...discount, type: "percent" })} className={`px-2 py-2 rounded-xl text-xs font-bold transition-all ${discount.type === "percent" ? "bg-teal-600 text-white" : "bg-white text-[#9b8ea0]"}`}>%</button>
                       <button onClick={() => setDiscount({ ...discount, type: "fixed" })} className={`px-2 py-2 rounded-xl text-xs font-bold transition-all ${discount.type === "fixed" ? "bg-teal-600 text-white" : "bg-white text-[#9b8ea0]"}`}>Fixed</button>
                     </div>
-                    <input type="number" min="0" value={discount.value} onChange={(e) => setDiscount({ ...discount, value: Number(e.target.value) })} className="flex-1 border border-[#e2dded] rounded-lg p-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
+                    <input type="number" min="0" value={discount.value} onChange={(e) => setDiscount({ ...discount, value: Number(e.target.value) })} className="flex-1 border border-[#e2dded] rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
                   </div>
                 </div>
 
@@ -271,14 +201,14 @@ return (
                       <button onClick={() => setTax({ ...tax, type: "percent" })} className={`p-2 text-xs rounded-xl font-bold transition-all ${tax.type === "percent" ? "bg-teal-600 text-white" : "bg-white text-[#9b8ea0]"}`}>%</button>
                       <button onClick={() => setTax({ ...tax, type: "fixed" })} className={`p-2 text-xs font-bold rounded-xl transition-all ${tax.type === "fixed" ? "bg-teal-600 text-white" : "bg-white text-[#9b8ea0]"}`}>Fixed</button>
                     </div>
-                    <input type="number" min="0" value={tax.value} onChange={(e) => setTax({ ...tax, value: Number(e.target.value) })} className="flex-1 border border-[#e2dded] rounded-lg p-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
+                    <input type="number" min="0" value={tax.value} onChange={(e) => setTax({ ...tax, value: Number(e.target.value) })} className="flex-1 border border-[#e2dded] rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
                   </div>
                 </div>  
 
                 {/* Total */}
-                <div className="bg-teal-600 rounded-xl px-4 py-4 flex items-center justify-between mt-1">
+                <div className="bg-[#0d9e8a] rounded-xl px-4 py-4 flex items-center justify-between mt-1">
                   <div>
-                    <p className="text-[10px] font-semibold tracking-widest text-white uppercase">Total Due</p>
+                    <p className="text-[10px] font-semibold tracking-widest text-white/70 uppercase">Total Due</p>
                     <p className="text-2xl font-bold text-white mt-0.5">{fmt(total)}</p>
                   </div>
                   <span className="text-white text-xl">→</span>
@@ -290,7 +220,7 @@ return (
         </div>
 
         {/* Send Options */}
-            <div className="p-4 bg-white rounded-xl border border-[#e2dded] shadow-sm overflow-hidden">
+            <div className="p-4 bg-white rounded-2xl border border-[#e2dded] shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-[#f0edf6]">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">📤</span>
@@ -328,13 +258,14 @@ return (
 
       </div>
     </div>
+  </div>
 );
 }
 
 // Helpers
 function Section({ icon, title, accent, children }: { icon: string; title: string; accent: string; children: React.ReactNode }) {
   return (
-    <div className="px-4 mb-4 bg-white rounded-xl border border-[#e2dded] shadow-sm">
+    <div className="px-4 mb-4 bg-white rounded-md border border-[#e2dded] shadow-sm">
       <div className="py-4 border-b border-[#f0edf6]">
         <div className="flex items-center gap-2">
           <span className="text-lg">{icon}</span>

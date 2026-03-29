@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { FaHome, FaFileInvoice, FaChartPie, FaUserCircle, FaAngleDown } from 'react-icons/fa';
 
-export default function Navbar({ user, logout }) {
+export default function Navbar({ user}) {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,6 +19,10 @@ export default function Navbar({ user, logout }) {
   ];
 
   const hoverBg = "hover:bg-teal-50";
+
+  const auth= () => {
+    router.push('/auth');
+  }
 
   // // DRY User Info
   // const UserInfo = ({ user, logout }) => (
@@ -85,7 +89,7 @@ export default function Navbar({ user, logout }) {
 
           {/* User Info */}
           <div className="ml-4 border-l border-gray-200 pl-4">
-            <button onClick={logout} className="bg-teal-500 text-bolder text-white hover:bg-teal-600 transition px-3 py-1 rounded text-sm">
+            <button onClick={auth} className="bg-teal-500 text-bolder text-white hover:bg-teal-600 transition px-3 py-1 rounded text-sm">
               Login/Signup
             </button>
           </div>
@@ -140,7 +144,7 @@ export default function Navbar({ user, logout }) {
           ))}
           {/* User Info */}
           <div className="mt-4 border-t border-gray-200 pt-4">
-            <button onClick={logout} className="w-full bg-teal-500 text-bolder text-white hover:bg-teal-600 transition px-3 py-2 rounded text-sm">
+            <button onClick={auth} className="w-full bg-teal-500 text-bolder text-white hover:bg-teal-600 transition px-3 py-2 rounded text-sm">
               Login/Signup
             </button>
           </div>

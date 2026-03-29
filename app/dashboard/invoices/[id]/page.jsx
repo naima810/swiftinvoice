@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client.ts";
 import { useParams } from "next/navigation"; // app router way
 import jsPDF from "jspdf";
 
@@ -15,7 +15,7 @@ export default function InvoicePage() {
   }, []);
 
   const fetchInvoice = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await createClient
       .from("invoices")
       .select("*")
       .eq("id", id)
