@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import supabase from "@/lib/supabase/client";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,7 +14,6 @@ export default function AuthPage() {
   const handleAuth = async () => {
     setLoading(true);
     setError("");
-    const supabase = createClient();
     // Simple validation
     if (!email || !password || (!isLogin && !name)) {
       setError("Please fill all required fields.");

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client.ts";
+import { supabase } from "@/lib/supabase/client.ts";
 import { useParams } from "next/navigation"; // app router way
 import jsPDF from "jspdf";
 
@@ -14,19 +14,23 @@ export default function InvoicePage() {
     fetchInvoice();
   }, []);
 
-  const fetchInvoice = async () => {
-    const { data, error } = await createClient
-      .from("invoices")
-      .select("*")
-      .eq("id", id)
-      .single();
+const fetchInvoice = async () => {
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-    if (error) {
-      console.error(error);
-    } else {
-      setInvoice(data);
-    }
-  };
+  console.log("DATA:", data);
+  console.log("ERROR:", error);
+
+  if (error) {
+    console.log("ERROR MESSAGE:", error.message);
+    return;
+  }
+
+  setInvoice(data);
+};
 
   const generatePDF = () => {
     if (!invoice) return;

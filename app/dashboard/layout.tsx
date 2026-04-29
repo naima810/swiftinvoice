@@ -16,11 +16,11 @@ if (!user) {
 }
     
   return (
-    <div className="flex bg-gray-50">
+    <div className="flex min-w-full bg-gray-50">
       
       <Sidebar />
       {/* Main content */}
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 w-full">
         {children}
       </main>
     </div>

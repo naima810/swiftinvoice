@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import NavbarWrapper from "@/components/NavbarWrapper";
 
 export default function Home() {

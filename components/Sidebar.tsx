@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { FaHome, FaFileInvoice, FaUserCircle, FaBars, FaTimes, FaSignOutAlt } from 'react-icons/fa'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: <FaHome size={18} /> },
@@ -11,7 +11,7 @@ const navItems = [
     name: 'Invoices',
     icon: <FaFileInvoice size={18} />,
     subLinks: [
-      { name: 'All Invoices', href: '/dashboard/invoices' },
+      { name: 'All Invoices', href: '/dashboard/invoices/allInvoices' },
       { name: 'Create Invoice', href: '/dashboard/invoices/new' },
       { name: 'Sent Reminders', href: '/dashboard/invoices/reminders' },
     ],
@@ -34,7 +34,6 @@ export default function Sidebar() {
   const [userEmail, setUserEmail] = useState('')
   const [openGroups, setOpenGroups] = useState<string[]>([])
 
-  const supabase = createClient()
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
