@@ -1,616 +1,736 @@
-"use client";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
-const initialLineItems = [{ id: 1, item: "", description: "", qty: 1, unitPrice: 0 }];
+'use client'
 
+import { useState } from 'react'
 
-export default function CreateInvoice() {
-  const [clientInfo, setClientInfo] = useState({ name: "", email: "", phone: "", address: "" });
-  const [issueDate, setIssueDate] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [invoiceNumber, setInvoiceNumber] = useState("INV-0000");
-  const [discount, setDiscount] = useState({ type: "percent", value: 0 });
-  const [tax, setTax] = useState({ type: "percent", value: 0 });
-  const [lineItems, setLineItems] = useState(initialLineItems);
-  const [notes, setNotes] = useState("");
-  const [terms, setTerms] = useState("");
-  const [sendEmail, setSendEmail] = useState(false);
-  const [scheduleReminder, setScheduleReminder] = useState(false);
-  const [currency, setCurrency] = useState("USD");
-  const [paymentTerms, setPaymentTerms] = useState("Net 30");
+export default function CreateInvoicePage() {
 
-const [reminderConfig, setReminderConfig] = useState({
-  beforeDue: 3,
-  onDue: 0,
-  afterDue: 2,
+  const [step, setStep] = useState(1)
 
-  repeat: {
-    enabled: true,
-    everyDays: 3,
-    maxReminders: 5,
+  const [formData, setFormData] = useState({
+    clientName: '',
+    clientEmail: '',
+    companyName: '',
+    dueDate: '',
+    tax:{
+      type: 'percentage', // or 'fixed'
+      value: 0
+    },
+    discount:{
+      type: 'percentage', // or 'fixed'
+      value: 0
+    },
+    items: [
+      {
+        itemName: '',
+        quantity: 1,
+        price: 0,
+        
+
+      },
+    ],
+    reminders: {
+  enabled: false,
+  mode: 'light', // light, standard, aggressive
+},
+    sendNow: true,
+  })
+
+  const reminderRules = {
+  light: {
+    beforeDue: [5],
+    afterDue: [7]
   },
-});
-  const router = useRouter();
-  const subtotal = lineItems.reduce((sum, li) => sum + li.qty * li.unitPrice, 0);
-  const discountAmt = discount.type === "percent" ? subtotal * (discount.value / 100) : Number(discount.value);
-  const taxAmt = tax.type === "percent" ? (subtotal - discountAmt) * (tax.value / 100) : Number(tax.value);
-  const total = subtotal - discountAmt + taxAmt;
 
-  const fmt = (n: any) => `$${Number(n).toFixed(2)}`;
-  
+  standard: {
+    beforeDue: [3],
+    afterDue: [1, 4, 10]
+  },
 
-useEffect(() => {
-  const fetchInvoiceNumber = async () => {
-    const { data, error } = await supabase
-      .from("invoices")
-      .select("invoice_number")
-      .order("created_at", { ascending: false })
-      .limit(1);
+  aggressive: {
+    beforeDue: [2],
+    afterDue: [1, 2, 5, 7]
+  }
+}
 
-    if (error) {
-      console.error(error);
-      return;
+  const handleItemChange = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
+    const updatedItems = [...formData.items]
+
+    updatedItems[index] = {
+      ...updatedItems[index],
+      [field]: value,
     }
 
-    const last = data?.[0]?.invoice_number || "INV-0000";
-    const nextNumber = `INV-${String(
-      Number(last.split("-")[1]) + 1
-    ).padStart(4, "0")}`;
-
-  setIssueDate(new Date().toISOString().slice(0, 10));
-  setDueDate(new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
-    setInvoiceNumber(nextNumber);
-  };
-
-  fetchInvoiceNumber();
-}, []);
-
-  const updateLineItem = (id: any, field: any, val: any) =>
-    setLineItems((items) => items.map((li) => (li.id === id ? { ...li, [field]: val } : li)));
-
-  const addLineItem = () =>
-    setLineItems((items) => [...items, { id: Date.now(), item: "", description: "", qty: 1, unitPrice: 0 }]);
-
-  const removeLineItem = (id: any) => setLineItems((items) => items.filter((li) => li.id !== id));
-
-  const handleSaveInvoice = async () => {
-  const user = (await supabase.auth.getUser()).data.user;
-  if (!user) return alert("Not logged in");
-
-  // 1. Create or insert client
-  const { data: client, error: clientError } = await supabase
-    .from("clients")
-    .insert({
-      user_id: user.id,
-      name: clientInfo.name,
-      email: clientInfo.email,
-      phone: clientInfo.phone,
-      address: clientInfo.address,
+    setFormData({
+      ...formData,
+      items: updatedItems,
     })
-    .select()
-    .single();
-
-  if (clientError) {
-    console.error(clientError);
-    return;
   }
 
-  // 2. Create invoice
-  const { data: invoice, error: invoiceError } = await supabase
-    .from("invoices")
-    .insert({
-      user_id: user.id,
-      client_id: client.id,
-      invoice_number: invoiceNumber,
-      issue_date: issueDate,
-      due_date: dueDate,
-      currency,
-      payment_terms: paymentTerms,
-
-      subtotal,
-      discount: discountAmt,
-      tax: taxAmt,
-      total,
-
-      notes,
-      terms,
+  const addItem = () => {
+    setFormData({
+      ...formData,
+      items: [
+        ...formData.items,
+        {
+          itemName: '',
+          quantity: 1,
+          price: 0.
+        },
+      ],
     })
-    .select()
-    .single();
-
-  if (invoiceError) {
-    console.log(invoiceError);
-    return;
   }
 
-const { error: reminderError } = await supabase
-  .from("invoice_reminders")
-  .insert({
-    invoice_id: invoice.id,
-    enabled: scheduleReminder,
-    config: reminderConfig,
-    sent_count: 0,
-    status: "active",
-  });
+const subtotal = formData.items.reduce(
+  (acc, item) => acc + Number(item.quantity) * Number(item.price),
+  0
+)
 
-if (reminderError) {
-  console.error(reminderError);
-  return;
-}
-  // 3. Insert line items
-  const itemsPayload = lineItems.map((li) => ({
-    invoice_id: invoice.id,
-    item: li.item,
-    description: li.description,
-    qty: li.qty,
-    unit_price: li.unitPrice,
-  }));
+const discountAmount = (subtotal * formData.discount.value) / 100
+const taxedBase = subtotal - discountAmount
+const taxAmount = (taxedBase * formData.tax.value) / 100
 
-  const { error: itemsError } = await supabase
-    .from("invoice_items")
-    .insert(itemsPayload);
+const totalAmount = taxedBase + taxAmount
 
-  if (itemsError) {
-    console.error(itemsError);
-    return;
-  }
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
 
-  router.push(`/dashboard/invoices/${invoice.id}/preview`);
-};
+      <div className="max-w-4xl mx-auto">
 
+        {/* Header */}
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Create Invoice
+          </h1>
 
-return (
-  <div className="min-h-screen w-full overflow-x-hidden bg-[#f8f7f4]">
-    <div className="w-full px-6 py-8">
-
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-[#1a1523]">Create Invoice</h1>
-        <div className="flex gap-3">
-          
-          <button onClick={handleSaveInvoice} className="px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-semibold">
-            Save Draft
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-6">
-
-        {/* ROW 1 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-           <Section icon="👤" title="Client Information" accent="#7c5cbf">
-              
-                <Field label="FULL NAME">
-                  <Input placeholder="Jane Doe" required value={clientInfo.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientInfo({ ...clientInfo, name: e.target.value })} />
-                </Field>
-                <Field label="EMAIL ADDRESS">
-                  <Input placeholder="jane@company.com" required value={clientInfo.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientInfo({ ...clientInfo, email: e.target.value })} />
-                </Field>           
-              <Field label="PHONE NUMBER (optional)">
-                <Input placeholder="+1 555 000 0000" value={clientInfo.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientInfo({ ...clientInfo, phone: e.target.value })} />
-              </Field>
-              <Field label="ADDRESS (optional)">
-                <textarea rows={3} className="border rounded-xl p-2" placeholder="123 Main St, City, Country" value={clientInfo.address} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientInfo({ ...clientInfo, address: e.target.value })} />
-              </Field>
-             
-            </Section>
-          
-
-          <Section icon="📋" title="Invoice Details" accent="#0d9e8a">
-              <div className="grid grid-cols-3 gap-4">
-                <Field label="INVOICE NUMBER (auto-generated)">
-                  <input
-                    value={invoiceNumber}
-                    onChange={(e) => setInvoiceNumber(e.target.value)}
-                    className="bg-teal-600 text-white text-xs font-bold p-1 rounded-lg"
-                  />
-                </Field>
-                <Field label="ISSUE DATE">
-                  <input type="date" required value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="w-full border border-[#e2dded] rounded-xl p-2 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
-                </Field>
-                <Field label="DUE DATE">
-                  <input type="date" required value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full border border-[#e2dded] rounded-xl p-2 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
-                </Field>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="CURRENCY">
-                  <select value={currency} required onChange={(e) => setCurrency(e.target.value)} className="w-full border border-[#e2dded] rounded-xl p-2 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all">
-                    <option>USD</option><option>EUR</option><option>GBP</option><option>PKR</option>
-                  </select>
-                </Field>
-                <Field label="PAYMENT TERMS">
-                  <select value={paymentTerms} required onChange={(e) => setPaymentTerms(e.target.value)} className="w-full border border-[#e2dded] rounded-xl p-2 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all">
-                    <option>Net 30</option><option>Net 15</option><option>Net 60</option><option>Due on Receipt</option>
-                  </select>
-                </Field>
-              </div>
-            </Section>
+          <p className="text-gray-500">
+            Create and send invoices in a few simple steps.
+          </p>
         </div>
 
-        {/* ROW 2 */}
-        <Section icon="📦" title="Line Items" accent="#e8832a">
-          <div className="w-full overflow-x-auto">
-            <table className="w-full table-fixed">
-              <colgroup>
-                <col className="w-[22%]" />
-                <col className="w-[30%]" />
-                <col className="w-[10%]" />
-                <col className="w-[16%]" />
-                <col className="w-[14%]" />
-                <col className="w-[8%]" />
-              </colgroup>
+        {/* Progress Bar */}
+        <div className="flex items-center justify-between mb-10">
 
-              <thead>
-                <tr className="text-center">
-                  {["ITEM", "DESCRIPTION", "QTY", "PRICE", "TOTAL", ""].map((h) => (
-                    <th key={h} className="text-xs text-[#9b8ea0] pb-2 pr-2">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {lineItems.map((li) => (
-                  <tr className="m-4" key={li.id}>
-                    <td className="pr-2 pb-2">
-                    <input
-                    required
-                    className="w-full border rounded-lg px-2 py-2 text-sm text-center"
-                    value={li.item}
-                    onChange={(e) =>
-                      updateLineItem(li.id, "item", e.target.value)
-                    }
-                  />
-                  </td>
-                  <td className="pr-2 pb-2">  
-                  
-                  <input
-                  required
-                  className="w-full border rounded-lg px-2 py-2 text-sm text-center"
-                    value={li.description}
-                    onChange={(e) =>
-                      updateLineItem(li.id, "description", e.target.value)
-                    }
-                  />
-                  </td>
-                  <td className="pr-2 pb-2">
-                      <input
-                        required
-                        type="number"
-                        className="w-full border rounded-lg px-2 py-2 text-sm text-center"
-                        value={li.qty}
-                        onChange={(e) =>
-                          updateLineItem(li.id, "qty", Number(e.target.value))
-                        }
-                      />
-                    </td>
-                      
-                    <td className="pr-2 pb-2">
-                      <input
-                      required
-                        type="number"
-                        className="w-full border rounded-lg px-2 py-2 text-sm"
-                        value={li.unitPrice}
-                        onChange={(e) =>
-                          updateLineItem(li.id, "unitPrice", Number(e.target.value))
-                        }
-                      />
-                    </td>
-                    <td className="pr-2 pb-2 text-teal-600 font-semibold">
-                      {fmt(li.qty * li.unitPrice)}
-                    </td>
-                    <td className="pb-2">
-                      <button className="w-full p-2 bg-red-100 text-red-500 rounded-lg" onClick={() => removeLineItem(li.id)}>×</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <button onClick={addLineItem} className="mt-2 mb-4 w-full border-2 border-dashed border-[#d4cfe0] rounded-xl py-3 text-sm font-semibold text-[#9b8ea0] hover:border-[#0d9e8a] hover:text-[#0d9e8a] hover:bg-[#f0faf8] transition-all">
-                + Add Line Item
-              </button>
-        </Section>
-
-        {/* ROW 3 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Section icon="📝" title="Additional Notes" accent="#7c5cbf">
-           <div className="grid grid-cols-2 gap-4">
-                <Field label="Notes & Conditions">
-                  <textarea rows={4} placeholder="Thank you for your business..." value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full border border-[#e2dded] rounded-xl px-3 py-2.5 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all resize-none" />
-                </Field>
-                <Field label="TERMS & CONDITIONS">
-                  <textarea rows={4} placeholder="Payment is due within the agreed period..." value={terms} onChange={(e) => setTerms(e.target.value)} className="w-full border border-[#e2dded] rounded-xl px-3 py-2.5 text-sm text-[#1a1523] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all resize-none" />
-                </Field>
-              </div>
-          </Section>
-          <div className="p-2 bg-white rounded-xl border border-[#e2dded] shadow-sm overflow-hidden">
-              <div className="border-b border-[#f0edf6]">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">💰</span>
-                  <h2 className="font-bold text-[#1a1523] text-base">Price Summary</h2>
-                </div>
-              </div>
-              <div className="px-5 py-4 flex flex-col gap-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#6b5f7a]">Subtotal</span>
-                  <span className="text-sm font-semibold text-[#0d9e8a]">{fmt(subtotal)}</span>
-                </div>
-
-                {/* Discount */}
-                <div>
-                  <p className="text-[10px] font-semibold tracking-widest text-[#9b8ea0] uppercase mb-2">Discount</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex rounded-xl overflow-hidden border border-[#e2dded]">
-                      <button onClick={() => setDiscount({ ...discount, type: "percent" })} className={`px-2 py-2 rounded-xl text-xs font-bold transition-all ${discount.type === "percent" ? "bg-teal-600 text-white" : "bg-white text-[#9b8ea0]"}`}>%</button>
-                      <button onClick={() => setDiscount({ ...discount, type: "fixed" })} className={`px-2 py-2 rounded-xl text-xs font-bold transition-all ${discount.type === "fixed" ? "bg-teal-600 text-white" : "bg-white text-[#9b8ea0]"}`}>Fixed</button>
-                    </div>
-                    <input type="number" min="0" value={discount.value} onChange={(e) => setDiscount({ ...discount, value: Number(e.target.value) })} className="flex-1 border border-[#e2dded] rounded-lg p-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
-                  </div>
-                </div>
-
-                {/* Tax */}
-                <div>
-                  <p className="text-[10px] font-semibold tracking-widest text-[#9b8ea0] uppercase mb-2">Tax</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex rounded-xl overflow-hidden border border-[#e2dded]">
-                      <button onClick={() => setTax({ ...tax, type: "percent" })} className={`p-2 text-xs rounded-xl font-bold transition-all ${tax.type === "percent" ? "bg-teal-600 text-white" : "bg-white text-[#9b8ea0]"}`}>%</button>
-                      <button onClick={() => setTax({ ...tax, type: "fixed" })} className={`p-2 text-xs font-bold rounded-xl transition-all ${tax.type === "fixed" ? "bg-teal-600 text-white" : "bg-white text-[#9b8ea0]"}`}>Fixed</button>
-                    </div>
-                    <input type="number" min="0" value={tax.value} onChange={(e) => setTax({ ...tax, value: Number(e.target.value) })} className="flex-1 border border-[#e2dded] rounded-lg p-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all" />
-                  </div>
-                </div>  
-
-                {/* Total */}
-                <div className="bg-teal-600 rounded-xl px-4 py-4 flex items-center justify-between mt-1">
-                  <div>
-                    <p className="text-[10px] font-semibold tracking-widest text-white uppercase">Total Due</p>
-                    <p className="text-2xl font-bold text-white mt-0.5">{fmt(total)}</p>
-                  </div>
-                  <span className="text-white text-xl">→</span>
-                </div>
-              </div>
+          {/* Step 1 */}
+          <div className="flex items-center flex-1">
+            <div
+              className={`
+                w-10 h-10 rounded-full flex items-center justify-center
+                font-semibold text-sm transition-all duration-300
+                ${step >= 1
+                  ? 'bg-[#00bba7] text-white'
+                  : 'bg-gray-200 text-gray-500'
+                }
+              `}
+            >
+              1
             </div>
 
+            <div
+              className={`
+                flex-1 h-1 mx-2 rounded-full transition-all duration-300
+                ${step >= 2 ? 'bg-[#00bba7]' : 'bg-gray-200'}
+              `}
+            />
+          </div>
 
+          {/* Step 2 */}
+          <div className="flex items-center flex-1">
+            <div
+              className={`
+                w-10 h-10 rounded-full flex items-center justify-center
+                font-semibold text-sm transition-all duration-300
+                ${step >= 2
+                  ? 'bg-[#00bba7] text-white'
+                  : 'bg-gray-200 text-gray-500'
+                }
+              `}
+            >
+              2
+            </div>
+
+            <div
+              className={`
+                flex-1 h-1 mx-2 rounded-full transition-all duration-300
+                ${step >= 3 ? 'bg-[#00bba7]' : 'bg-gray-200'}
+              `}
+            />
+          </div>
+
+          {/* Step 3 */}
+          <div className="flex items-center">
+            <div
+              className={`
+                w-10 h-10 rounded-full flex items-center justify-center
+                font-semibold text-sm transition-all duration-300
+                ${step >= 3
+                  ? 'bg-[#00bba7] text-white'
+                  : 'bg-gray-200 text-gray-500'
+                }
+              `}
+            >
+              3
+            </div>
+          </div>
         </div>
 
-        {/* Send Options */}
-           <div className="p-4 bg-white rounded-xl border border-[#e2dded] shadow-sm overflow-hidden">
-  
-  {/* HEADER */}
-  <div className="px-5 py-4 border-b border-[#f0edf6]">
-    <div className="flex items-center gap-2">
-      <span className="text-lg">📤</span>
-      <h2 className="font-bold text-[#1a1523] text-base">
-        Send Options
+        {/* Labels */}
+        <div className="flex justify-between text-sm text-gray-500 mb-8 px-1">
+          <span>Client Info</span>
+          <span>Invoice Items</span>
+          <span>Send</span>
+        </div>
+
+        {/* Main Card */}
+        <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-5 md:p-8">
+{/* STEP 1 */}
+{step === 1 && (
+  <div>
+    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-6">
+      <h2 className="text-2xl font-semibold text-gray-900">
+        Client Information
       </h2>
+
+      <button className="p-2 bg-[#00bba7] hover:bg-[#009a8a] transition text-white rounded-xl text-sm font-medium">
+        + Add New Client
+      </button>
     </div>
-  </div>
 
-  <div className="px-5 py-4 flex flex-col gap-6">
+    {/* Client Information */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Client Name
+        </label>
 
-    {/* EMAIL */}
-    <label className="flex items-start gap-3 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={sendEmail}
-        onChange={(e) => setSendEmail(e.target.checked)}
-        className="w-4 h-4 mt-1 accent-[#0d9e8a]"
-      />
+        <input
+          type="text"
+          value={formData.clientName}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              clientName: e.target.value,
+            })
+          }
+          placeholder="John Doe"
+          className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#00bba7]"
+        />
+      </div>
 
       <div>
-        <p className="text-sm font-semibold text-[#1a1523]">
-          Send invoice via email
-        </p>
-        <p className="text-xs text-[#9b8ea0]">
-          Automatically email invoice to client after saving
-        </p>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Client Email
+        </label>
+
+        <input
+          type="email"
+          value={formData.clientEmail}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              clientEmail: e.target.value,
+            })
+          }
+          placeholder="john@example.com"
+          className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#00bba7]"
+        />
       </div>
+
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Company Name
+        </label>
+
+        <input
+          type="text"
+          value={formData.companyName}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              companyName: e.target.value,
+            })
+          }
+          placeholder="Acme Inc"
+          className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#00bba7]"
+        />
+      </div>
+    </div>
+
+    {/* Divider */}
+    <hr className="my-8 border-gray-200" />
+
+    {/* Invoice Details */}
+    <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+      Invoice Details
+    </h2>
+
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Invoice Number
+        </label>
+
+        <input
+          type="text"
+          value="#INV-001"
+          disabled
+          className="w-full border border-gray-200 rounded-xl p-3 bg-gray-100 text-gray-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Issue Date
+        </label>
+
+        <input
+          type="date"
+          value={new Date().toISOString().split("T")[0]}
+          disabled
+          className="w-full border border-gray-200 rounded-xl p-3 bg-gray-100 text-gray-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Due Date
+        </label>
+
+        <input
+          type="date"
+          value={formData.dueDate}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              dueDate: e.target.value,
+            })
+          }
+          className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#00bba7]"
+        />
+      </div>
+    </div>
+  </div>
+)}
+
+          {/* STEP 2 */}
+          {step === 2 && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  Invoice Items
+                </h2>
+
+                <button
+                  onClick={addItem}
+                  className="bg-[#00bba7] hover:bg-[#00bba7]-700 transition text-white px-4 py-2 rounded-xl text-sm font-medium"
+                >
+                  + Add Item
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                {formData.items.map((item, index) => (
+                  <div
+                    key={index}
+                    className="border border-gray-200 rounded-2xl p-4"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Item Name
+                        </label>
+
+                        <input
+                          type="text"
+                          value={item.itemName}
+                          onChange={(e) =>
+                            handleItemChange(index, 'itemName', e.target.value)
+                          }
+                          placeholder="Website Design"
+                          className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Quantity
+                        </label>
+
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            handleItemChange(index, 'quantity', Number(e.target.value))
+                          }
+                          className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Price
+                        </label>
+
+                        <input
+                          type="number"
+                          value={item.price}
+                          onChange={(e) =>
+                            handleItemChange(index, 'price', Number(e.target.value))
+                          }
+                          className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                    </div>
+                  </div>
+                ))}
+              </div>
+                {/* Adjustments */}
+<div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-5">
+
+  {/* Discount */}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-2">
+      Discount (% or fixed)
     </label>
-
-{/* REMINDERS */}
-<div className="flex flex-col gap-4">
-
-  {/* HEADER + TOGGLE */}
-  <div className="flex items-start justify-between">
-    <div>
-      <p className="text-sm font-semibold text-[#1a1523]">
-        Payment reminders
-      </p>
-      <p className="text-xs text-[#9b8ea0]">
-        Configure when to remind clients
-      </p>
-    </div>
-
-    {/* REAL TOGGLE */}
-    <button
-      type="button"
-      onClick={() => setScheduleReminder((prev) => !prev)}
-      className={`relative inline-flex items-center rounded-full p-2 bg-teal-600 hover:bg-teal-700 text-white`}
+    <div className="flex items-center gap-3 mt-4 md:mt-8">
+    <select
+      value={formData.discount.type}
+      onChange={(e) =>
+        setFormData({
+          ...formData,
+          discount: {
+            ...formData.discount,
+            type: e.target.value,
+          },
+        })
+      }
+      className="border border-gray-200 rounded-xl p-3"
     >
-      {scheduleReminder ?"Disable Reminders" : "Enable Reminders"}
-    </button>
-  </div>
-
-  {/* SETTINGS */}
-  {scheduleReminder && (
-    <div className="flex flex-col gap-4 mt-2">
-
-      {/* BEFORE DUE */}
-      <div className="flex flex-row justify-between gap-1">
-        <label className="text-md text-[#9b8ea0] uppercase">
-          Before due date (days)
-        </label>
-        <input
-          type="number"
-          min="0"
-          value={reminderConfig.beforeDue}
-          onChange={(e) =>
-            setReminderConfig((prev) => ({
-              ...prev,
-              beforeDue: Number(e.target.value),
-            }))
-          }
-          className="w-24 border rounded-lg p-2 text-sm"
-        />
-      </div>
-
-      {/* ON DUE */}
-      <div className="flex flex-row justify-between gap-1">
-        <label className="text-md text-[#9b8ea0] uppercase">
-          On due date
-        </label>
-        <span className="text-sm text-[#9b8ea0]">Auto (always sends)</span>
-      </div>
-
-      {/* AFTER DUE */}
-      <div className="flex flex-row justify-between gap-1">
-        <label className="text-md text-[#9b8ea0] uppercase">
-          After due date (days)
-        </label>
-        <input
-          type="number"
-          min="0"
-          value={reminderConfig.afterDue}
-          onChange={(e) =>
-            setReminderConfig((prev) => ({
-              ...prev,
-              afterDue: Number(e.target.value),
-            }))
-          }
-          className="w-24 border rounded-lg p-2 text-sm"
-        />
-      </div>
-
-      {/* REPEAT SETTINGS */}
-      <div className="border-t pt-4 flex flex-col gap-3">
-
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={reminderConfig.repeat.enabled}
-            onChange={(e) =>
-              setReminderConfig((prev) => ({
-                ...prev,
-                repeat: {
-                  ...prev.repeat,
-                  enabled: e.target.checked,
-                },
-              }))
-            }
-          />
-          Repeat reminders after overdue
-        </label>
-
-        {reminderConfig.repeat.enabled && (
-          <div className="flex flex-col gap-3">
-
-            {/* Every X days */}
-            <div className="flex flex-row justify-between gap-1">
-              <label className="text-md text-[#9b8ea0] uppercase">
-                Repeat every (days)
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={reminderConfig.repeat.everyDays}
-                onChange={(e) =>
-                  setReminderConfig((prev) => ({
-                    ...prev,
-                    repeat: {
-                      ...prev.repeat,
-                      everyDays: Number(e.target.value),
-                    },
-                  }))
-                }
-                className="w-24 border rounded-lg p-2 text-sm"
-              />
-            </div>
-
-            {/* Max reminders */}
-            <div className="flex flex-row justify-between gap-1">
-              <label className="text-md text-[#9b8ea0] uppercase">
-                Max reminders
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={reminderConfig.repeat.maxReminders}
-                onChange={(e) =>
-                  setReminderConfig((prev) => ({
-                    ...prev,
-                    repeat: {
-                      ...prev.repeat,
-                      maxReminders: Number(e.target.value),
-                    },
-                  }))
-                }
-                className="w-24 border rounded-lg p-2 text-sm"
-              />
-            </div>
-
-          </div>
-        )}
-      </div>
-
-    </div>
-  )}
-</div>
-
-  </div>
-</div>
-
-          <div className="flex flex-row justify-end gap-4">
-            <button className="p-2 bg-gray-200 p-3 rounded-xl hover:bg-gray-300 transition-all">
-              Download PDF
-            </button>
-            <button className="p-2 bg-teal-600 text-white p-3 rounded-xl hover:bg-teal-700 transition-all">
-              Send Invoice
-            </button>
-          </div>
-
-        </div>
-
-      </div>
-    </div>
-);
-}
-
-// Helpers
-function Section({ icon, title, accent, children }: { icon: string; title: string; accent: string; children: React.ReactNode }) {
-  return (
-    <div className="px-4 mb-4 bg-white rounded-xl border border-[#e2dded] shadow-sm">
-      <div className="py-4 border-b border-[#f0edf6]">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{icon}</span>
-          <h2 className="font-bold text-base" style={{ color: accent }}>{title}</h2>
-        </div>
-      </div>
-      <div className="py-4 flex flex-col gap-4">{children}</div>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-sm mb-2 font-semibold tracking-widest text-[#9b8ea0] uppercase">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function Input({required=false, placeholder, value, onChange }: { required?: boolean; placeholder: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
-  return (
+      <option className='hover:bg-[#00bba7]' value="percent">%</option>
+      <option value="fixed">Fixed</option>
+    </select>
     <input
-      required={required}
-      placeholder={placeholder}
-      value={value}
-      onChange={onChange}
-      className="border border-[#e2dded] rounded-xl p-2 text-sm text-[#1a1523] bg-white placeholder:text-[#c4bdd0] focus:outline-none focus:ring-2 focus:ring-[#0d9e8a]/30 focus:border-[#0d9e8a] transition-all"
+      type="number"
+      value={formData.discount.value}
+      onChange={(e) =>
+        setFormData({
+          ...formData,
+          discount: {
+            ...formData.discount,
+            value: Number(e.target.value),
+          },
+        })
+      }
+      placeholder="e.g. 10"
+      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#00bba7]"
     />
-  );
+    </div>
+  </div>
+
+  {/* Tax */}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-2">
+      Tax (%)
+    </label>
+    <div className="flex flex-row items-center gap-3 mt-4 md:mt-8">
+      <select
+      value={formData.tax.type}
+      onChange={(e) =>
+        setFormData({
+          ...formData,
+          tax: {
+            ...formData.tax,
+            type: e.target.value,
+          },
+        })
+      }
+      className="border border-gray-200 rounded-xl p-3"
+    >
+      <option className='hover:bg-[#00bba7]' value="percent">%</option>
+      <option className='hover:bg-[#00bba7]' value="fixed">Fixed</option>
+    </select>
+    <input
+      type="number"
+      value={formData.tax.value}
+      onChange={(e) =>
+        setFormData({
+          ...formData,
+          tax: {
+            ...formData.tax,
+            value: Number(e.target.value),
+          },
+        })
+      }
+      placeholder="e.g. 15"
+      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#00bba7]"
+    />
+    </div>
+  </div>
+
+</div>
+              {/* Total */}
+              <div className="mt-8 flex justify-end">
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 min-w-[220px]">
+                  <p className="text-sm text-gray-500 mb-1">
+                    Total Amount
+                  </p>
+
+                  <h3 className="text-3xl font-bold text-[#00bba7]">
+                    <div className="space-y-1 text-right">
+  <p className="text-sm text-gray-500">Subtotal: ${subtotal}</p>
+  <p className="text-sm text-gray-500">Discount: -${discountAmount}</p>
+  <p className="text-sm text-gray-500">Tax: +${taxAmount}</p>
+
+  <h3 className="text-3xl font-bold text-[#00bba7]">
+    ${totalAmount}
+  </h3>
+</div>
+                  </h3>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3 */}
+          {step === 3 && (
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                Send & Reminders
+              </h2>
+
+              <div className="space-y-5">
+
+                <div className="flex items-center justify-between border border-gray-200 rounded-2xl p-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      Send Invoice Immediately
+                    </h3>
+
+                    <p className="text-sm text-gray-500 mt-1">
+                      Automatically email invoice after creation.
+                    </p>
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    checked={formData.sendNow}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        sendNow: e.target.checked,
+                      })
+                    }
+                    className="w-5 h-5"
+                  />
+                </div>
+
+                {/* Enable Reminders */}
+<div className="flex items-center justify-between border border-gray-200 rounded-2xl p-4">
+  <div>
+    <h3 className="font-semibold text-gray-900">
+      Enable Reminders
+    </h3>
+    <p className="text-sm text-gray-500 mt-1">
+      Send payment reminders automatically.
+    </p>
+  </div>
+
+  <input
+    type="checkbox"
+    checked={formData.reminders.enabled}
+    onChange={(e) =>
+      setFormData({
+        ...formData,
+        reminders: {
+          ...formData.reminders,
+          enabled: e.target.checked,
+        },
+      })
+    }
+    className="w-5 h-5"
+  />
+</div>
+{formData.reminders.enabled && (
+  <div className="border border-gray-200 rounded-2xl p-4 space-y-4">
+    
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="font-semibold text-gray-900">
+          Reminder Settings
+        </h3>
+        <p className="text-sm text-gray-500 mt-1">
+          Use global settings or customize for this invoice.
+        </p>
+      </div>
+
+    </div>
+
+    {/* Only show custom settings if NOT using default */}
+    {<div className="border border-gray-200 rounded-2xl p-4 space-y-4">
+  <h3 className="fo``nt-semibold text-gray-900">
+    Reminder Behavior
+  </h3>
+
+  <p className="text-sm text-gray-500">
+    Choose how aggressively you want to follow up unpaid invoices.
+  </p>
+
+  {/* LIGHT */}
+  <label className="flex items-start gap-3 cursor-pointer">
+    <input
+      type="radio"
+      name="reminderMode"
+      value="light"
+      checked={formData.reminders.mode === "light"}
+      onChange={(e) =>
+        setFormData({
+          ...formData,
+          reminders: {
+            ...formData.reminders,
+            mode: e.target.value,
+            enabled: true,
+          },
+        })
+      }
+      className="mt-1"
+    />
+
+    <div>
+      <p className="font-medium text-gray-900">Light (Friendly)</p>
+      <p className="text-sm text-gray-500">
+        Minimal reminders. Best for trusted clients.
+      </p>
+    </div>
+  </label>
+
+  {/* STANDARD */}
+  <label className="flex items-start gap-3 cursor-pointer">
+    <input
+      type="radio"
+      name="reminderMode"
+      value="standard"
+      checked={formData.reminders.mode === "standard"}
+      onChange={(e) =>
+        setFormData({
+          ...formData,
+          reminders: {
+            ...formData.reminders,
+            mode: e.target.value,
+            enabled: true,
+          },
+        })
+      }
+      className="mt-1"
+    />
+
+    <div>
+      <p className="font-medium text-gray-900">Standard (Balanced)</p>
+      <p className="text-sm text-gray-500">
+        Default reminders before and after due date.
+      </p>
+    </div>
+  </label>
+
+  {/* AGGRESSIVE */}
+  <label className="flex items-start gap-3 cursor-pointer">
+    <input
+      type="radio"
+      name="reminderMode"
+      value="aggressive"
+      checked={formData.reminders.mode === "aggressive"}
+      onChange={(e) =>
+        setFormData({
+          ...formData,
+          reminders: {
+            ...formData.reminders,
+            mode: e.target.value,
+            enabled: true,
+          },
+        })
+      }
+      className="mt-1"
+    />
+
+    <div>
+      <p className="font-medium text-gray-900">Aggressive (Strict)</p>
+      <p className="text-sm text-gray-500">
+        Frequent reminders. For late or unreliable clients.
+      </p>
+    </div>
+  </label>
+</div>}
+  </div>
+)}
+
+                {/* Summary */}
+                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 mt-8">
+                  <h3 className="font-semibold text-gray-900 mb-4">
+                    Invoice Summary
+                  </h3>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Client</span>
+                      <span className="font-medium text-gray-900">
+                        {formData.clientName || 'Not Added'}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Items</span>
+                      <span className="font-medium text-gray-900">
+                        {formData.items.length}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Total</span>
+                      <span className="font-bold text-emerald-700 text-lg">
+                        ${totalAmount}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between mt-10 pt-6 border-t border-gray-100">
+
+            <button
+              onClick={() => setStep(prev => prev - 1)}
+              disabled={step === 1}
+              className="px-5 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium disabled:opacity-40"
+            >
+              Back
+            </button>
+
+            {step < 3 ? (
+              <button
+                onClick={() => setStep(prev => prev + 1)}
+                className="bg-[#00bba7] hover:bg-[#009a8a] transition text-white px-6 py-3 rounded-xl font-medium"
+              >
+                Continue
+              </button>
+            ) : (
+              <button
+                className="bg-[#00bba7] hover:bg-emerald-700 transition text-white px-6 py-3 rounded-xl font-medium"
+              >
+                Create Invoice
+              </button>
+            )}
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+  )
 }

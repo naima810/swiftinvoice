@@ -10,12 +10,15 @@ export default function Navbar({ user}) {
   const [openSub, setOpenSub] = useState(null); // For mobile accordion
 
   const navItems = [
-    {
-      name: 'Features', icon: <FaFileInvoice />,
-    },
-    { name: 'Pricing', href: '/analytics', icon: <FaChartPie /> },
-
-    { name: 'How it works', href: '/dashboard', icon: <FaHome /> },
+    {name: 'Features', href: '/#features', icon: <FaFileInvoice />},
+    { name: 'How it works', href: '/#how-it-works', icon: <FaHome /> },
+    {name: 'Templates', href: '/templates', icon: <FaFileInvoice /> },
+    { name: 'Pricing', href: '/#pricing', icon: <FaChartPie /> },
+    {name: 'Resources', icon: <FaUserCircle />, subLinks: [
+      { name: 'Blog', href: '/blog' },
+      { name: 'Help Center', href: '/help' },
+      { name: 'Contact Us', href: '/contact' },
+    ]},
   ];
 
   const hoverBg = "hover:bg-teal-50";
@@ -24,24 +27,9 @@ export default function Navbar({ user}) {
     router.push('/auth');
   }
 
-  // // DRY User Info
-  // const UserInfo = ({ user, logout }) => (
-  //   <div className="flex items-center gap-3">
-  //     <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white font-semibold">
-  //       {user.email[0].toUpperCase()}
-  //     </div>
-  //     <span className="text-gray-600 text-sm">{user.email}</span>
-  //     <button
-  //       onClick={logout}
-  //       className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition"
-  //     >
-  //       Logout
-  //     </button>
-  //   </div>
-  // );
 
   return (
-    <nav className="bg-white shadow sticky top-0 z-50">
+    <nav className="bg-white sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex justify-between items-center">
         {/* Logo */}
         <div
@@ -52,7 +40,7 @@ export default function Navbar({ user}) {
         </div>
 
         {/* Desktop Links */}
-        <div className="hidden md:flex items-center gap-2 relative">
+        <div className="hidden md:flex items-center gap-4 relative">
           {navItems.map(item => {
             const active = pathname === item.href || (item.subLinks && item.subLinks.some(sl => sl.href === pathname));
 
@@ -60,12 +48,11 @@ export default function Navbar({ user}) {
               <div key={item.name} className={`relative ${item.subLinks ? 'group' : ''}`}>
                 <button
                   onClick={() => !item.subLinks && router.push(item.href)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+                  className={`flex items-center lg:px-2 py-2 rounded-lg font-medium transition ${
                     active ? 'bg-teal-100 shadow-sm border-l-4 border-teal-600 text-teal-700' : `text-gray-700 ${hoverBg}`
                   }`}
                 >
-                  {item.icon}
-                  <span className="hidden lg:inline">{item.name}</span>
+                  <span className="hidden inline">{item.name}</span>
                   {item.subLinks && <FaAngleDown className="text-sm" />}
                 </button>
 
@@ -86,14 +73,13 @@ export default function Navbar({ user}) {
               </div>
             );
           })}
-
+          </div>
           {/* User Info */}
           <div className="ml-4 border-l border-gray-200 pl-4">
-            <button onClick={auth} className="bg-teal-500 text-bolder text-white hover:bg-teal-600 transition px-3 py-1 rounded text-sm">
+            <button onClick={auth} className="bg-teal-500 text-bolder text-white hover:bg-teal-600 transition p-2 rounded text-sm">
               Login/Signup
             </button>
           </div>
-        </div>
 
         {/* Mobile Menu Button */}
         <div className="md:hidden">

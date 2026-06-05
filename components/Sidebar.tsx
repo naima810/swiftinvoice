@@ -2,11 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { FaHome, FaFileInvoice, FaUserCircle, FaBars, FaTimes, FaSignOutAlt } from 'react-icons/fa'
+import {
+  FaHome,
+  FaFileInvoice,
+  FaUserCircle,
+  FaSignOutAlt,
+  FaBars
+} from 'react-icons/fa'
+import { IoClose } from 'react-icons/io5'
 import { supabase } from '@/lib/supabase/client'
 
 const navItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: <FaHome size={18} /> },
+  {
+    name: 'Dashboard',
+    href: '/dashboard',
+    icon: <FaHome size={18} />
+  },
   {
     name: 'Invoices',
     icon: <FaFileInvoice size={18} />,
@@ -29,11 +40,11 @@ const navItems = [
 export default function Sidebar() {
   const router = useRouter()
   const pathname = usePathname()
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [hovered, setHovered] = useState(false)
-  const [userEmail, setUserEmail] = useState('')
-  const [openGroups, setOpenGroups] = useState<string[]>([])
 
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const [openGroups, setOpenGroups] = useState<string[]>([])
+  const [userEmail, setUserEmail] = useState('')
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -41,323 +52,198 @@ export default function Sidebar() {
     })
   }, [])
 
-  // Auto-open group if a sublink is active
-  useEffect(() => {
-    navItems.forEach(item => {
-      if (item.subLinks?.some(sl => pathname === sl.href)) {
-        setOpenGroups(prev => prev.includes(item.name) ? prev : [...prev, item.name])
-      }
-    })
-  }, [pathname])
-
   const toggleGroup = (name: string) => {
     setOpenGroups(prev =>
-      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+      prev.includes(name)
+        ? prev.filter(n => n !== name)
+        : [...prev, name]
     )
   }
 
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut()
-      router.push('/auth')
-    } catch (err) {
-      console.error('Logout failed', err)
-    }
-  }
-
-  const expanded = hovered || mobileOpen
-
-  const renderNavItem = (item: typeof navItems[0]) => {
-    const active =
-      pathname === item.href ||
-      (item.subLinks?.some(sl => pathname === sl.href))
-
-    if (item.subLinks) {
-      const isOpen = openGroups.includes(item.name)
-      return (
-        <div key={item.name}>
-          <button
-            onClick={() => expanded && toggleGroup(item.name)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              width: '100%',
-              padding: '10px 12px',
-              borderRadius: 10,
-              border: 'none',
-              background: active ? '#f0fdf9' : 'transparent',
-              color: active ? '#0d9e8a' : '#4a5568',
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: 'pointer',
-              transition: 'background 0.15s',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Icon */}
-            <span style={{ flexShrink: 0, color: active ? '#0d9e8a' : '#718096' }}>{item.icon}</span>
-
-            {/* Label — only visible when expanded */}
-            <span style={{
-              opacity: expanded ? 1 : 0,
-              width: expanded ? 'auto' : 0,
-              overflow: 'hidden',
-              transition: 'opacity 0.2s, width 0.2s',
-              flex: 1,
-              textAlign: 'left',
-            }}>
-              {item.name}
-            </span>
-
-            {/* Chevron */}
-            {expanded && (
-              <span style={{
-                fontSize: 11,
-                transition: 'transform 0.2s',
-                transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                flexShrink: 0,
-              }}>▾</span>
-            )}
-          </button>
-
-          {/* Sublinks */}
-          {expanded && isOpen && (
-            <div style={{ marginLeft: 16, marginTop: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {item.subLinks.map(sl => {
-                const subActive = pathname === sl.href
-                return (
-                  <button
-                    key={sl.name}
-                    onClick={() => router.push(sl.href)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '8px 12px',
-                      borderRadius: 8,
-                      border: 'none',
-                      background: subActive ? '#ccfbf1' : 'transparent',
-                      color: subActive ? '#0d9e8a' : '#4a5568',
-                      fontSize: 13,
-                      fontWeight: subActive ? 600 : 400,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={e => { if (!subActive) (e.currentTarget as HTMLButtonElement).style.background = '#f0fdf9' }}
-                    onMouseLeave={e => { if (!subActive) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
-                  >
-                    {sl.name}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    return (
-      <button
-        key={item.name}
-        onClick={() => router.push(item.href!)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          width: '100%',
-          padding: '10px 12px',
-          borderRadius: 10,
-          border: 'none',
-          borderLeft: active ? '3px solid #0d9e8a' : '3px solid transparent',
-          background: active ? '#f0fdf9' : 'transparent',
-          color: active ? '#0d9e8a' : '#4a5568',
-          fontWeight: 600,
-          fontSize: 14,
-          cursor: 'pointer',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          transition: 'background 0.15s',
-        }}
-        onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = '#f0fdf9' }}
-        onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
-      >
-        <span style={{ flexShrink: 0, color: active ? '#0d9e8a' : '#718096' }}>{item.icon}</span>
-        <span style={{
-          opacity: expanded ? 1 : 0,
-          width: expanded ? 'auto' : 0,
-          overflow: 'hidden',
-          transition: 'opacity 0.2s',
-        }}>
-          {item.name}
-        </span>
-      </button>
-    )
+    await supabase.auth.signOut()
+    router.push('/auth')
   }
 
   return (
     <>
-      {/* Mobile top bar */}
-      <div style={{
-        display: 'none',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        background: 'white',
-        padding: '12px 16px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-      }}
-        className="mobile-topbar"
-      >
-        <span
-          style={{ fontSize: 20, fontWeight: 700, color: '#0d9e8a', cursor: 'pointer' }}
-          onClick={() => router.push('/dashboard')}
-        >
+      {/* Mobile Topbar */}
+      <div className="md:hidden h-16 bg-white flex items-center justify-between px-4 sticky top-0 z-40">
+        <h1 className="hidden md:block font-bold text-emerald-600 text-lg">
           SwiftInvoice
-        </span>
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4a5568', fontSize: 20 }}
-        >
-          {mobileOpen ? <FaTimes /> : <FaBars />}
+        </h1>
+
+        <button onClick={() => setSidebarOpen(true)}>
+          <FaBars size={20} />
         </button>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">
+            {userEmail?.[0]?.toUpperCase() || 'U'}
+          </div>
+        </div>
       </div>
 
-      <style>{`
-        @media (max-width: 768px) {
-          .mobile-topbar { display: flex !important; }
-          .desktop-sidebar { display: none !important; }
-          .mobile-sidebar { display: ${mobileOpen ? 'flex' : 'none'} !important; }
-        }
-        @media (min-width: 769px) {
-          .mobile-topbar { display: none !important; }
-          .desktop-sidebar { display: flex !important; }
-          .mobile-sidebar { display: none !important; }
-        }
-      `}</style>
-
-      {/* Desktop sidebar — collapses to icons, expands on hover */}
-      <aside
-        className="desktop-sidebar"
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          width: hovered ? 220 : 56,
-          minWidth: hovered ? 220 : 56,
-          background: 'white',
-          boxShadow: '2px 0 8px rgba(0,0,0,0.06)',
-          flexDirection: 'column',
-          padding: '16px 8px',
-          zIndex: 50,
-          transition: 'width 0.25s ease, min-width 0.25s ease',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Brand */}
+      {/* Overlay */}
+      {sidebarOpen && (
         <div
-          onClick={() => router.push('/dashboard')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            marginBottom: 24,
-            cursor: 'pointer',
-            padding: '4px 4px',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <span style={{ fontSize: 22, flexShrink: 0 }}>⚡</span>
-          <span style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: '#0d9e8a',
-            opacity: hovered ? 1 : 0,
-            transition: 'opacity 0.2s',
-            overflow: 'hidden',
-          }}>
-            SwiftInvoice
-          </span>
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed md:sticky top-0 left-0 z-50
+          h-screen bg-white border-r border-gray-200
+          flex flex-col transition-all duration-300
+          
+          ${collapsed ? 'w-[80px]' : 'w-[240px]'}
+          
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0
+        `}
+      >
+        {/* Header */}
+        <div className="h-16 flex items-center justify-between px-4 border-b">
+          {!collapsed && (
+            <h2 className="font-bold text-emerald-600 text-xl">
+              SwiftInvoice
+            </h2>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="hidden md:block text-gray-500"
+            >
+              ☰
+            </button>
+
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="md:hidden"
+            >
+              <IoClose size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {navItems.map(renderNavItem)}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-2">
+
+          {navItems.map(item => {
+            const active =
+              pathname === item.href ||
+              item.subLinks?.some(sl => pathname === sl.href)
+
+            if (item.subLinks) {
+              const isOpen = openGroups.includes(item.name)
+
+              return (
+                <div key={item.name}>
+                  <button
+                    onClick={() => toggleGroup(item.name)}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-3 rounded-lg transition
+                      ${active
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'hover:bg-gray-100 text-gray-700'
+                      }
+                    `}
+                  >
+                    {item.icon}
+
+                    {!collapsed && (
+                      <>
+                        <span className="flex-1 text-left">
+                          {item.name}
+                        </span>
+
+                        <span className={`transition ${isOpen ? 'rotate-180' : ''}`}>
+                          ▾
+                        </span>
+                      </>
+                    )}
+                  </button>
+
+                  {!collapsed && isOpen && (
+                    <div className="ml-8 mt-2 space-y-1">
+                      {item.subLinks.map(sl => (
+                        <button
+                          key={sl.href}
+                          onClick={() => {
+                            router.push(sl.href)
+                            setSidebarOpen(false)
+                          }}
+                          className={`
+                            block w-full text-left px-3 py-2 rounded-md text-sm
+                            ${pathname === sl.href
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'text-gray-600 hover:bg-gray-100'
+                            }
+                          `}
+                        >
+                          {sl.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            }
+
+            return (
+              <button
+                key={item.name}
+                onClick={() => {
+                  router.push(item.href!)
+                  setSidebarOpen(false)
+                }}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-3 rounded-lg transition
+                  ${active
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'hover:bg-gray-100 text-gray-700'
+                  }
+                `}
+              >
+                {item.icon}
+
+                {!collapsed && (
+                  <span>{item.name}</span>
+                )}
+              </button>
+            )
+          })}
         </nav>
 
-        {/* User footer */}
-        <div style={{
-          borderTop: '1px solid #e2e8f0',
-          paddingTop: 12,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: hovered ? 'flex-start' : 'center',
-          gap: 8,
-          overflow: 'hidden',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '0 4px' }}>
-            <div style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              background: '#0d9e8a',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700,
-              fontSize: 14,
-              flexShrink: 0,
-            }}>
-              {userEmail ? userEmail[0].toUpperCase() : 'U'}
+        {/* Footer */}
+        <div className="border-t p-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">
+              {userEmail?.[0]?.toUpperCase() || 'U'}
             </div>
-            <span style={{
-              fontSize: 13,
-              color: '#4a5568',
-              opacity: hovered ? 1 : 0,
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-              flex: 1,
-              transition: 'opacity 0.2s',
-            }}>
-              {userEmail || 'User'}
-            </span>
+
+            {!collapsed && (
+              <div className="overflow-hidden">
+                <p className="text-sm font-medium truncate">
+                  {userEmail}
+                </p>
+              </div>
+            )}
           </div>
 
           <button
             onClick={handleLogout}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              width: '100%',
-              padding: '8px',
-              borderRadius: 8,
-              border: 'none',
-              background: 'transparent',
-              color: '#e53e3e',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#fff5f5')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-50 transition"
           >
-            <FaSignOutAlt size={16} style={{ flexShrink: 0 }} />
-            <span style={{ opacity: hovered ? 1 : 0, transition: 'opacity 0.2s' }}>Logout</span>
+            <FaSignOutAlt />
+
+            {!collapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>
-
-      {/* Mobile sidebar — full width drawer */}
-      
     </>
   )
 }
