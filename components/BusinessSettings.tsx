@@ -6,7 +6,7 @@ import supabase from "@/lib/supabase/client";
 // ⚠️ NOTE: Before logo upload works, create a Supabase Storage bucket called `logos`.
 // Go to Supabase Dashboard → Storage → New Bucket → name it `logos` → set to Public.
 
-export default function CompanySettingsPage() {
+export default function BusinessSettings() {
   const [color, setColor] = useState("#0d9e8a");
   const [form, setForm] = useState({
     company_name: "",
@@ -154,14 +154,6 @@ if (existing) {
 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Business Profile
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Manage your business profile and email integrations.
-          </p>
-        </div>
 
         <button
           onClick={saveBusinessProfile}

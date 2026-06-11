@@ -3,38 +3,70 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
-  FaHome,
-  FaFileInvoice,
-  FaUserCircle,
-  FaSignOutAlt,
-  FaBars
-} from 'react-icons/fa'
+  LuHouse,
+  LuFiles,
+  LuFilePen,
+  LuUsers,
+  LuFileChartLine,
+  LuBell,
+  LuLogOut,
+  LuAlignJustify,
+  LuSettings,
+  LuCircleHelp
+
+} from 'react-icons/lu'
 import { IoClose } from 'react-icons/io5'
 import { supabase } from '@/lib/supabase/client'
+import { icons } from 'lucide-react'
 
 const navItems = [
   {
     name: 'Dashboard',
     href: '/dashboard',
-    icon: <FaHome size={18} />
+    icon: <LuHouse size={18} />
   },
   {
-    name: 'Invoices',
-    icon: <FaFileInvoice size={18} />,
-    subLinks: [
-      { name: 'All Invoices', href: '/dashboard/invoices/allInvoices' },
-      { name: 'Create Invoice', href: '/dashboard/invoices/new' },
-      { name: 'Sent Reminders', href: '/dashboard/invoices/reminders' },
-    ],
+    name: ' All Invoices',
+    icon: <LuFiles size={18} />,
+    href: '/dashboard/invoices/allInvoices'
   },
   {
-    name: 'Account',
-    icon: <FaUserCircle size={18} />,
-    subLinks: [
-      { name: 'Company Setting', href: '/dashboard/account/company' },
-      { name: 'Account Settings', href: '/dashboard/account/settings' },
-    ],
+    name: 'Create Invoice',
+    icon: <LuFilePen size={18} />,
+    href: '/dashboard/invoices/new'
   },
+  // {
+  //   name: 'Clients',
+  //   icon: <LuUsers size={18} />,
+  //   href: '/dashboard/clients'
+  // },
+  {
+    name: 'Templates',
+    icon: <LuFiles/>
+  },
+  {
+    name: 'Reports',
+    icon: <LuFileChartLine size={18} />,
+    href: '/dashboard/reports'
+  },
+  {
+    name: 'Reminders',
+    icon: <LuBell size={18} />,
+    href: '/dashboard/reminders'
+  },
+]
+
+const footerItems = [
+  {
+    name: 'Settings',
+    icon: <LuSettings size={18} />,
+    href: '/dashboard/settings'
+  },
+  {
+    name: 'Help & Support',
+    icon: <LuCircleHelp size={18} />,
+    href: '/dashboard/help'
+  }
 ]
 
 export default function Sidebar() {
@@ -45,10 +77,12 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [openGroups, setOpenGroups] = useState<string[]>([])
   const [userEmail, setUserEmail] = useState('')
+  const [userName, setUserName] = useState('')
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserEmail(data.user?.email || '')
+      setUserName('Naima') // Placeholder, replace with actual name if available
     })
   }, [])
 
@@ -74,7 +108,7 @@ export default function Sidebar() {
         </h1>
 
         <button onClick={() => setSidebarOpen(true)}>
-          <FaBars size={20} />
+          <LuAlignJustify size={20} />
         </button>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">
@@ -105,7 +139,7 @@ export default function Sidebar() {
         `}
       >
         {/* Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b">
+        <div className="h-16 flex items-center justify-between px-4 ">
           {!collapsed && (
             <h2 className="font-bold text-emerald-600 text-xl">
               SwiftInvoice
@@ -130,7 +164,7 @@ export default function Sidebar() {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto p-3 space-y-2">
+        <nav className="flex-1 overflow-y-auto px-3 py-1">
 
           {navItems.map(item => {
             const active =
@@ -145,7 +179,7 @@ export default function Sidebar() {
                   <button
                     onClick={() => toggleGroup(item.name)}
                     className={`
-                      w-full flex items-center gap-3 px-3 py-3 rounded-lg transition
+                      w-full flex items-center gap-3 px-3 py-1 rounded-lg transition
                       ${active
                         ? 'bg-emerald-50 text-emerald-700'
                         : 'hover:bg-gray-100 text-gray-700'
@@ -177,7 +211,7 @@ export default function Sidebar() {
                             setSidebarOpen(false)
                           }}
                           className={`
-                            block w-full text-left px-3 py-2 rounded-md text-sm
+                            block w-full text-left px-3 py-1 rounded-md text-sm
                             ${pathname === sl.href
                               ? 'bg-emerald-100 text-emerald-700'
                               : 'text-gray-600 hover:bg-gray-100'
@@ -219,26 +253,38 @@ export default function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t p-4">
+        <div className="p-4">
+
+           {footerItems.map(item => {
+            const active = pathname === item.href
+
+            return (
+              <button
+                key={item.href}
+                onClick={() => {
+                  router.push(item.href)
+                  setSidebarOpen(false)
+                }}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                  ${active
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'hover:bg-gray-100 text-gray-700'
+                  }
+                `}
+              >
+                {item.icon}
+                {!collapsed && <span>{item.name}</span>}
+              </button>
+            )
+          })}
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">
-              {userEmail?.[0]?.toUpperCase() || 'U'}
-            </div>
-
-            {!collapsed && (
-              <div className="overflow-hidden">
-                <p className="text-sm font-medium truncate">
-                  {userEmail}
-                </p>
-              </div>
-            )}
           </div>
-
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-50 transition"
           >
-            <FaSignOutAlt />
+            <LuLogOut />
 
             {!collapsed && <span>Logout</span>}
           </button>
